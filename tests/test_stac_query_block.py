@@ -1,6 +1,8 @@
 import unittest
 from datetime import datetime, timezone
 
+from shapely import Point
+
 from cqlalchemy.stac.query import STACQueryBlock
 
 
@@ -74,6 +76,26 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["op"], "<=")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][0]["property"], "gsd")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1], 0.75)
+
+    def test_spatial(self):
+        a = STACQueryBlock()
+        a.geometry.intersects(Point(4, 5))
+        a_dict = a.build_query()
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "s_intersects")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "geometry")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["type"], "Point")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["coordinates"][0], 4)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["coordinates"][1], 5)
+
+        a.geometry.intersects(Point(4, 5).buffer(1))
+        a_dict = a.build_query()
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "s_intersects")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "geometry")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["type"], "Polygon")
 
 
 if __name__ == '__main__':
