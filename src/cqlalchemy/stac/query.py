@@ -119,27 +119,22 @@ class QueryBase:
         pass
 
 
-class StringQuery(QueryBase):
+class BaseString(QueryBase):
+    _eq_value = None
     _in_values = None
     _like_value = None
-    _eq_value = None
 
-    def equals(self, value) -> QueryBlock:
-        self._check()
+    def equals(self, value: str) -> QueryBlock:
+        self._check([value])
         self._eq_value = value
         return self._parent_obj
 
     def in_set(self, values: list[str]) -> QueryBlock:
-        self._check()
+        self._check(values)
         self._in_values = values
         return self._parent_obj
 
-    def like(self, value: str) -> QueryBlock:
-        self._check()
-        self._like_value = value
-        return self._parent_obj
-
-    def _check(self):
+    def _check(self, values: list[str]):
         if self._in_values is not None or self._eq_value is not None or self._like_value is not None:
             raise ValueError("eq, in or like cannot already be set")
 
@@ -149,20 +144,50 @@ class StringQuery(QueryBase):
                 "op": "=",
                 "args": [self.property_obj, self._eq_value]
             }
-        elif self._like_value is not None:
-            return {
-                "op": "like",
-                "args": [
-                    self.property_obj,
-                    self._like_value
-                ]
-            }
         elif self._in_values is not None and len(self._in_values) > 0:
             return {
                 "op": "in",
                 "args": [
                     self.property_obj,
                     self._in_values
+                ]
+            }
+        return None
+
+
+class EnumQuery(BaseString):
+    _enum_values: set[str] = set()
+
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
+        c = EnumQuery(field_name, parent_obj)
+        c._enum_values = set(enum_fields)
+        if len(c._enum_values) <= 1:
+            raise ValueError(f"enum_fields must have 2 or more unique values. fields are {enum_fields}")
+        return c
+
+    def _check(self, values: list[str]):
+        if not set(values).issubset(self._enum_values):
+            raise ValueError("")
+        if self._in_values is not None or self._eq_value is not None or self._like_value is not None:
+            raise ValueError("eq, in or like cannot already be set")
+
+
+class StringQuery(BaseString):
+    def like(self, value: str) -> QueryBlock:
+        self._check([value])
+        self._like_value = value
+        return self._parent_obj
+
+    def build_query(self):
+        if self._eq_value is not None or (self._in_values is not None and len(self._in_values) > 0):
+            return super(StringQuery, self).build_query()
+        elif self._like_value is not None:
+            return {
+                "op": "like",
+                "args": [
+                    self.property_obj,
+                    self._like_value
                 ]
             }
         return None
@@ -334,15 +359,60 @@ class SpatialQuery(QueryBase):
         }
 
 
-class QueryBlock:
-    def __init__(self):
+class Extension:
+    def __init__(self, query_block: QueryBlock):
         self._filter_expressions: list[QueryTuple] = []
 
-    def build_query(self, top_level_is_or=False):
+    def build_query(self):
         v = list(vars(self).values())
         args = [x.build_query() for x in v if isinstance(x, QueryBase) and x.build_query() is not None]
         for query_filter in self._filter_expressions:
             args.append(query_filter.build_query())
+
+        if len(args) == 0:
+            return []
+        return args
+
+
+class EOExtension(Extension):
+    def __init__(self, query_block: QueryBlock):
+        super().__init__(query_block)
+        self.cloud_cover = NumberQuery.init_with_limits("eo:cloud_cover", query_block, min_value=0, max_value=100)
+        self.snow_cover = NumberQuery.init_with_limits("eo:snow_cover", query_block, min_value=0, max_value=100)
+        self.center_wavelength = NumberQuery.init_with_limits("eo:center_wavelength", query_block, min_value=0)
+        self.full_width_half_max = NumberQuery.init_with_limits("eo:full_width_half_max", query_block, min_value=0)
+        self.solar_illumination = NumberQuery.init_with_limits("eo:solar_illumination", query_block, min_value=0)
+
+
+class SARExtension(Extension):
+    def __init__(self, query_block: QueryBlock):
+        super().__init__(query_block)
+        self.observation_direction = EnumQuery.init_enums("sar:observation_direction", query_block, ["left", "right"])
+
+
+class QueryBlock:
+    def __init__(self):
+        self._filter_expressions: list[QueryTuple] = []
+        self.datetime = DateQuery("datetime", self)
+        self.updated = DateQuery("updated", self)
+        self.created = DateQuery("created", self)
+        self.id = StringQuery("id", self)
+        self.platform = StringQuery("platform", self)
+        self.geometry = SpatialQuery("geometry", self)
+        self.gsd = NumberQuery.init_with_limits("gsd", self, min_value=0)
+        self.eo = EOExtension(self)
+        self.sar = SARExtension(self)
+
+    def build_query(self, top_level_is_or=False):
+        properties = list(vars(self).values())
+        args = [x.build_query() for x in properties if isinstance(x, QueryBase) and x.build_query() is not None]
+        for query_filter in self._filter_expressions:
+            args.append(query_filter.build_query())
+
+        for p in properties:
+            if isinstance(p, Extension):
+                args.extend(p.build_query())
+
         if len(args) == 0:
             return None
         top_level_op = "and"
@@ -357,18 +427,6 @@ class QueryBlock:
     def filter(self, *column_expresion):
         query_tuple = column_expresion[0]
         self._filter_expressions.append(query_tuple)
-
-
-class STACQueryBlock(QueryBlock):
-    def __init__(self):
-        super(STACQueryBlock, self).__init__()
-        self.datetime = DateQuery("datetime", self)
-        self.updated = DateQuery("updated", self)
-        self.created = DateQuery("created", self)
-        self.id = StringQuery("id", self)
-        self.platform = StringQuery("platform", self)
-        self.geometry = SpatialQuery("geometry", self)
-        self.gsd = NumberQuery.init_with_limits("gsd", self, min_value=0)
 
 
 def filter_grouping(*column_expression):
