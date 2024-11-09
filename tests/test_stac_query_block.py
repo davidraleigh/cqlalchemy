@@ -146,7 +146,7 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][0]["property"], "datetime")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][1], end)
 
-    def test_extension(self):
+    def test_extension_eo(self):
         a = QueryBlock()
         t = datetime.now(tz=timezone.utc)
         a.datetime.lt(t).eo.cloud_cover.lt(45).created.gt(t)
@@ -163,6 +163,26 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][2]["op"], "<")
         self.assertEqual(a_dict["filter"]["args"][2]["args"][0]["property"], "eo:cloud_cover")
         self.assertEqual(a_dict["filter"]["args"][2]["args"][1], 45)
+
+        a.eo.cloud_cover.gt(10)
+        a_dict = a.build_query()
+        self.assertEqual(a_dict["filter"]["args"][2]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][2]["args"][0]["op"], ">")
+        self.assertEqual(a_dict["filter"]["args"][2]["args"][0]["args"][0]["property"], "eo:cloud_cover")
+        self.assertEqual(a_dict["filter"]["args"][2]["args"][0]["args"][1], 10)
+        self.assertEqual(a_dict["filter"]["args"][2]["args"][1]["op"], "<")
+        self.assertEqual(a_dict["filter"]["args"][2]["args"][1]["args"][0]["property"], "eo:cloud_cover")
+        self.assertEqual(a_dict["filter"]["args"][2]["args"][1]["args"][1], 45)
+
+    def test_extension_sar(self):
+        a = QueryBlock()
+        a.sar.observation_direction.equals("left")
+        a_dict = a.build_query()
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "=")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "sar:observation_direction")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], "left")
 
 
 if __name__ == '__main__':
