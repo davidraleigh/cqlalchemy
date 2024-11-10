@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from shapely import Point
 
-from cqlalchemy.stac.query import QueryBlock
+from cqlalchemy.stac.query import ObservationDirection, QueryBlock
 
 
 class STACTestCase(unittest.TestCase):
@@ -174,15 +174,40 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][2]["args"][1]["args"][0]["property"], "eo:cloud_cover")
         self.assertEqual(a_dict["filter"]["args"][2]["args"][1]["args"][1], 45)
 
-    def test_extension_sar(self):
+    def test_extension_observation_sar(self):
         a = QueryBlock()
-        a.sar.observation_direction.equals("left")
+        a.sar.observation_direction.equals(ObservationDirection.left)
         a_dict = a.build_query()
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
         self.assertEqual(a_dict["filter"]["op"], "and")
         self.assertEqual(a_dict["filter"]["args"][0]["op"], "=")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "sar:observation_direction")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1], "left")
+
+    def test_extension_observation_sar_left(self):
+        a = QueryBlock()
+        a.sar.observation_direction.left()
+        a_dict = a.build_query()
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "=")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "sar:observation_direction")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], "left")
+
+    def test_extension_observation_sar_set(self):
+        a = QueryBlock()
+        a.sar.observation_direction.in_set([ObservationDirection.left])
+        a_dict = a.build_query()
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "in")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "sar:observation_direction")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1][0], "left")
+        b = QueryBlock()
+        b.sar.observation_direction.in_set([ObservationDirection.left, ObservationDirection.right])
+        b_dict = b.build_query()
+        self.assertEqual(b_dict["filter"]["args"][0]["args"][1][0], "left")
+        self.assertEqual(b_dict["filter"]["args"][0]["args"][1][1], "right")
 
 
 if __name__ == '__main__':

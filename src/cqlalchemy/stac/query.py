@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
+from enum import Enum
 from json import JSONEncoder
 
 from shapely.geometry.base import BaseGeometry
@@ -118,25 +119,14 @@ class QueryBase:
     def _less_check(self, value):
         pass
 
+    def _check(self, value):
+        pass
+
 
 class BaseString(QueryBase):
     _eq_value = None
     _in_values = None
     _like_value = None
-
-    def equals(self, value: str) -> QueryBlock:
-        self._check([value])
-        self._eq_value = value
-        return self._parent_obj
-
-    def in_set(self, values: list[str]) -> QueryBlock:
-        self._check(values)
-        self._in_values = values
-        return self._parent_obj
-
-    def _check(self, values: list[str]):
-        if self._in_values is not None or self._eq_value is not None or self._like_value is not None:
-            raise ValueError("eq, in or like cannot already be set")
 
     def build_query(self):
         if self._eq_value is not None:
@@ -150,6 +140,14 @@ class BaseString(QueryBase):
                 "args": [
                     self.property_obj,
                     self._in_values
+                ]
+            }
+        elif self._like_value is not None:
+            return {
+                "op": "like",
+                "args": [
+                    self.property_obj,
+                    self._like_value
                 ]
             }
         return None
@@ -173,24 +171,55 @@ class EnumQuery(BaseString):
             raise ValueError("eq, in or like cannot already be set")
 
 
+class ObservationDirection(Enum):
+    left = "left"
+    right = "right"
+
+
+class ObservationDirectionQuery(EnumQuery):
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
+        o = ObservationDirectionQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def left(self) -> QueryBlock:
+        return self.equals(ObservationDirection.left)
+
+    def right(self) -> QueryBlock:
+        return self.equals(ObservationDirection.right)
+
+    def equals(self, value: ObservationDirection) -> QueryBlock:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[ObservationDirection]) -> QueryBlock:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+
 class StringQuery(BaseString):
+    def equals(self, value: str) -> QueryBlock:
+        self._check(value)
+        self._eq_value = value
+        return self._parent_obj
+
+    def in_set(self, values: list[str]) -> QueryBlock:
+        self._check(values)
+        self._in_values = values
+        return self._parent_obj
+
     def like(self, value: str) -> QueryBlock:
-        self._check([value])
+        self._check(value)
         self._like_value = value
         return self._parent_obj
 
-    def build_query(self):
-        if self._eq_value is not None or (self._in_values is not None and len(self._in_values) > 0):
-            return super(StringQuery, self).build_query()
-        elif self._like_value is not None:
-            return {
-                "op": "like",
-                "args": [
-                    self.property_obj,
-                    self._like_value
-                ]
-            }
-        return None
+    def _check(self, value):
+        if self._in_values is not None or self._eq_value is not None or self._like_value is not None:
+            raise ValueError("eq, in or like cannot already be set")
 
 
 class Query(QueryBase):
@@ -364,8 +393,8 @@ class Extension:
         self._filter_expressions: list[QueryTuple] = []
 
     def build_query(self):
-        v = list(vars(self).values())
-        args = [x.build_query() for x in v if isinstance(x, QueryBase) and x.build_query() is not None]
+        properties = list(vars(self).values())
+        args = [x.build_query() for x in properties if isinstance(x, QueryBase) and x.build_query() is not None]
         for query_filter in self._filter_expressions:
             args.append(query_filter.build_query())
 
@@ -387,7 +416,7 @@ class EOExtension(Extension):
 class SARExtension(Extension):
     def __init__(self, query_block: QueryBlock):
         super().__init__(query_block)
-        self.observation_direction = EnumQuery.init_enums("sar:observation_direction", query_block, ["left", "right"])
+        self.observation_direction = ObservationDirectionQuery.init_enums("sar:observation_direction", query_block, [x.value for x in ObservationDirection])
 
 
 class QueryBlock:
