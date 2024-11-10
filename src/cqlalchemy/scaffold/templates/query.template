@@ -1,0 +1,321 @@
+from __future__ import annotations
+
+from datetime import date, datetime, timedelta, timezone
+from enum import Enum
+
+from shapely.geometry.base import BaseGeometry
+
+from cqlalchemy.stac.base_query import QueryBase, QueryTuple, FilterTuple
+
+
+class BaseString(QueryBase):
+    _eq_value = None
+    _in_values = None
+    _like_value = None
+
+    def build_query(self):
+        if self._eq_value is not None:
+            return {
+                "op": "=",
+                "args": [self.property_obj, self._eq_value]
+            }
+        elif self._in_values is not None and len(self._in_values) > 0:
+            return {
+                "op": "in",
+                "args": [
+                    self.property_obj,
+                    self._in_values
+                ]
+            }
+        elif self._like_value is not None:
+            return {
+                "op": "like",
+                "args": [
+                    self.property_obj,
+                    self._like_value
+                ]
+            }
+        return None
+
+
+class EnumQuery(BaseString):
+    _enum_values: set[str] = set()
+
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
+        c = EnumQuery(field_name, parent_obj)
+        c._enum_values = set(enum_fields)
+        if len(c._enum_values) <= 1:
+            raise ValueError(f"enum_fields must have 2 or more unique values. fields are {enum_fields}")
+        return c
+
+    def _check(self, values: list[str]):
+        if not set(values).issubset(self._enum_values):
+            raise ValueError("")
+        if self._in_values is not None or self._eq_value is not None or self._like_value is not None:
+            raise ValueError("eq, in or like cannot already be set")
+
+
+
+
+
+class StringQuery(BaseString):
+    def equals(self, value: str) -> QueryBlock:
+        self._check(value)
+        self._eq_value = value
+        return self._parent_obj
+
+    def in_set(self, values: list[str]) -> QueryBlock:
+        self._check(values)
+        self._in_values = values
+        return self._parent_obj
+
+    def like(self, value: str) -> QueryBlock:
+        self._check(value)
+        self._like_value = value
+        return self._parent_obj
+
+    def _check(self, value):
+        if self._in_values is not None or self._eq_value is not None or self._like_value is not None:
+            raise ValueError("eq, in or like cannot already be set")
+
+
+class Query(QueryBase):
+    _gt_value = None
+    _gt_operand = None
+    _lt_value = None
+    _lt_operand = None
+    _eq_value = None
+
+    def build_query(self):
+        if self._eq_value is not None:
+            return {
+                "op": "=",
+                "args": [self.property_obj, self._eq_value]
+            }
+        elif self._gt_value is None and self._lt_value is None:
+            return None
+
+        gt_query = {
+            "op": self._gt_operand,
+            "args": [self.property_obj, self._gt_value]
+        }
+        lt_query = {
+            "op": self._lt_operand,
+            "args": [self.property_obj, self._lt_value]
+        }
+        if self._gt_value is not None and self._lt_value is None:
+            return gt_query
+        elif self._lt_value is not None and self._gt_value is None:
+            return lt_query
+        elif self._gt_value is not None and self._lt_value is not None and self._gt_value < self._lt_value:
+            return {
+                "op": "and",
+                "args": [
+                    gt_query, lt_query
+                ]
+            }
+        elif self._gt_value is not None and self._lt_value is not None and self._gt_value > self._lt_value:
+            return {
+                "op": "or",
+                "args": [
+                    gt_query, lt_query
+                ]
+            }
+
+    def equals(self, value) -> QueryBlock:
+        self._eq_value = value
+        return self._parent_obj
+
+    def gt(self, value) -> QueryBlock:
+        self._greater_check(value)
+        self._gt_value = value
+        self._gt_operand = ">"
+        return self._parent_obj
+
+    def gte(self, value) -> QueryBlock:
+        self._greater_check(value)
+        self._gt_value = value
+        self._gt_operand = ">="
+        return self._parent_obj
+
+    def lt(self, value) -> QueryBlock:
+        self._less_check(value)
+        self._lt_value = value
+        self._lt_operand = "<"
+        return self._parent_obj
+
+    def lte(self, value) -> QueryBlock:
+        self._less_check(value)
+        self._lt_value = value
+        self._lt_operand = "<="
+        return self._parent_obj
+
+    # def _greater_check(self, value):
+    #     if self._gt_operand is not None or self._eq_value is not None:
+    #         raise ValueError("cannot set equals after setting gt,gte,equals")
+    #
+    # def _less_check(self, value):
+    #     if self._lt_operand is not None or self._eq_value is not None:
+    #         raise ValueError("cannot set less after setting lt,lte,equals")
+    #
+    # def _equals_check(self):
+    #     if self._gt_value is not None or self._lt_value is not None or self._eq_value is not None:
+    #         raise ValueError("cannot set equals after setting lt,lte,gt,gte,equals")
+
+
+class DateQuery(Query):
+    def equals(self, value: date, tzinfo=timezone.utc) -> QueryBlock:
+        # self._equals_check()
+        if isinstance(value, date):
+            start = datetime.combine(value, datetime.min.time(), tzinfo=tzinfo)
+            end = datetime.combine(value, datetime.max.time(), tzinfo=tzinfo)
+            self._gt_value = start
+            self._gt_operand = ">="
+            self._lt_value = end
+            self._lt_operand = "<="
+        else:
+            self._eq_value = date
+        return self._parent_obj
+
+    def delta(self, value: date, td: timedelta, tzinfo=timezone.utc):
+        # self._equals_check()
+        if td.total_seconds() > 0:
+            start = datetime.combine(value, datetime.min.time(), tzinfo=tzinfo)
+            end = start + td
+        else:
+            end = datetime.combine(value, datetime.max.time(), tzinfo=tzinfo)
+            start = end + td
+        self._gt_value = start
+        self._gt_operand = ">="
+        self._lt_value = end
+        self._lt_operand = "<="
+        return self._parent_obj
+
+
+class NumberQuery(Query):
+    _min_value = None
+    _max_value = None
+
+    def equals(self, value):
+        # self._equals_check()
+        self._eq_value = value
+        return self._parent_obj
+
+    @classmethod
+    def init_with_limits(cls, field_name, parent_obj: QueryBlock, min_value=None, max_value=None):
+        c = NumberQuery(field_name, parent_obj)
+        c._min_value = min_value
+        c._max_value = max_value
+        return c
+
+    def _greater_check(self, value):
+        super(NumberQuery, self)._greater_check(value)
+        self._check_range(value)
+
+    def _less_check(self, value):
+        super(NumberQuery, self)._less_check(value)
+        self._check_range(value)
+
+    def _check_range(self, value):
+        if self._min_value is not None and value < self._min_value:
+            raise ValueError(f"setting value of {value}, "
+                             f"can't be less than min value of {self._min_value} for {self._field_name}")
+        if self._max_value is not None and value > self._max_value:
+            raise ValueError(f"setting value of {value}, "
+                             f"can't be greater than max value of {self._max_value} for {self._field_name}")
+
+
+class SpatialQuery(QueryBase):
+    _geometry = None
+
+    def intersects(self, geometry: BaseGeometry) -> QueryBlock:
+        self._geometry = geometry
+        return self._parent_obj
+
+    def build_query(self):
+        if self._geometry is None:
+            return None
+
+        return {
+            "op": "s_intersects",
+            "args": [
+                self.property_obj,
+                self._geometry.__geo_interface__
+            ]
+        }
+
+
+class Extension:
+    def __init__(self, query_block: QueryBlock):
+        self._filter_expressions: list[QueryTuple] = []
+
+    def build_query(self):
+        properties = list(vars(self).values())
+        args = [x.build_query() for x in properties if isinstance(x, QueryBase) and x.build_query() is not None]
+        for query_filter in self._filter_expressions:
+            args.append(query_filter.build_query())
+
+        if len(args) == 0:
+            return []
+        return args
+
+
+class EOExtension(Extension):
+    def __init__(self, query_block: QueryBlock):
+        super().__init__(query_block)
+        self.cloud_cover = NumberQuery.init_with_limits("eo:cloud_cover", query_block, min_value=0, max_value=100)
+        self.snow_cover = NumberQuery.init_with_limits("eo:snow_cover", query_block, min_value=0, max_value=100)
+        self.center_wavelength = NumberQuery.init_with_limits("eo:center_wavelength", query_block, min_value=0)
+        self.full_width_half_max = NumberQuery.init_with_limits("eo:full_width_half_max", query_block, min_value=0)
+        self.solar_illumination = NumberQuery.init_with_limits("eo:solar_illumination", query_block, min_value=0)
+
+
+class SARExtension(Extension):
+    def __init__(self, query_block: QueryBlock):
+        super().__init__(query_block)
+        self.observation_direction = ObservationDirectionQuery.init_enums("sar:observation_direction", query_block, [x.value for x in ObservationDirection])
+
+
+class QueryBlock:
+    def __init__(self):
+        self._filter_expressions: list[QueryTuple] = []
+        self.datetime = DateQuery("datetime", self)
+        self.updated = DateQuery("updated", self)
+        self.created = DateQuery("created", self)
+        self.id = StringQuery("id", self)
+        self.platform = StringQuery("platform", self)
+        self.geometry = SpatialQuery("geometry", self)
+        self.gsd = NumberQuery.init_with_limits("gsd", self, min_value=0)
+        self.eo = EOExtension(self)
+        self.sar = SARExtension(self)
+
+    def build_query(self, top_level_is_or=False):
+        properties = list(vars(self).values())
+        args = [x.build_query() for x in properties if isinstance(x, QueryBase) and x.build_query() is not None]
+        for query_filter in self._filter_expressions:
+            args.append(query_filter.build_query())
+
+        for p in properties:
+            if isinstance(p, Extension):
+                args.extend(p.build_query())
+
+        if len(args) == 0:
+            return None
+        top_level_op = "and"
+        if top_level_is_or:
+            top_level_op = "or"
+        return {
+            "filter-lang": "cql2-json",
+            "filter": {
+                "op": top_level_op,
+                "args": args}}
+
+    def filter(self, *column_expresion):
+        query_tuple = column_expresion[0]
+        self._filter_expressions.append(query_tuple)
+
+
+def filter_grouping(*column_expression):
+    filter_tuple = FilterTuple(column_expression[0].left, column_expression[0].op, column_expression[0].right)
+    return filter_tuple
