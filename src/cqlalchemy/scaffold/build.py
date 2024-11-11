@@ -8,15 +8,17 @@ ENUM_QUERY_CLASS = "\n    def {x}(self) -> QueryBlock:\n        return self.equa
 NUMBER_QUERY_FIELD = "        self.{partial_name} = NumberQuery.init_with_limits(\"{field_name}\", query_block, " \
                      "min_value={min_value}, max_value={max_value})\n"
 STRING_QUERY_FIELD = "        self.{partial_name} = StringQuery(\"{field_name}\", self)\n"
+ENUM_QUERY_FIELD = "        self.{partial_name} = {class_name}Query.init_enums(\"{field_name}\", query_block, " \
+                   "[x.value for x in {class_name}])\n"
 
 
-def build_enum(enum_field_key: str, enum_object: dict, full_name=False, add_unique=False):
+def build_enum(field_name: str, enum_object: dict, full_name=False, add_unique=False):
     prefix = ""
-    if full_name and ":" in enum_field_key:
-        prefix = enum_field_key.split(":")[0].upper()
-    if ":" in enum_field_key:
-        enum_field_key = enum_field_key.split(":")[1]
-    class_name = prefix + "".join([x.capitalize() for x in enum_field_key.split("_")])
+    if full_name and ":" in field_name:
+        prefix = field_name.split(":")[0].upper()
+    if ":" in field_name:
+        field_name = field_name.split(":")[1]
+    class_name = prefix + "".join([x.capitalize() for x in field_name.split("_")])
 
     enum_key_values = ""
     custom_methods = ""
@@ -27,7 +29,7 @@ def build_enum(enum_field_key: str, enum_object: dict, full_name=False, add_uniq
 
     return enum_template.substitute(class_name=class_name,
                                     enum_key_values=enum_key_values,
-                                    custom_methods=custom_methods)
+                                    custom_methods=custom_methods), class_name
 
 
 def build_extension(schema: dict, force_string_enum=False):
@@ -40,6 +42,10 @@ def build_extension(schema: dict, force_string_enum=False):
     if extension_name not in description:
         extension_name = extension_name.upper()
 
+    if "v1" in schema["$id"]:
+        definitions = definitions["fields"]["properties"]
+
+    enum_definitions = ""
     field_instantiations = ""
     for field_name in field_names:
         partial_name = field_name.split(":")[1]
@@ -55,9 +61,14 @@ def build_extension(schema: dict, force_string_enum=False):
                                                               partial_name=partial_name,
                                                               min_value=min_value,
                                                               max_value=max_value)
+        elif field_obj["type"] == "string" and "enum" in field_obj:
+            enum_definition, class_name = build_enum(field_name, field_obj)
+            enum_definitions += "\n\n"
+            enum_definitions += enum_definition
+            field_instantiations += ENUM_QUERY_FIELD.format(field_name=field_name, partial_name=partial_name, class_name=class_name)
         elif field_obj["type"] == "string":
             field_instantiations += STRING_QUERY_FIELD.format(field_name=field_name, partial_name=partial_name)
 
     return extension_template.substitute(extension_name=extension_name,
                                          description=description,
-                                         field_instantiations=field_instantiations)
+                                         field_instantiations=field_instantiations) + enum_definitions

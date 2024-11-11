@@ -5,6 +5,7 @@ from unittest import TestCase
 from cqlalchemy.scaffold.build import build_enum, build_extension
 
 eo_definition = json.loads(pkgutil.get_data(__name__, "test_data/eo.schema.json").decode('utf-8'))
+sar_definition = json.loads(pkgutil.get_data(__name__, "test_data/sar.schema.json").decode('utf-8'))
 
 
 class TestBuild(TestCase):
@@ -171,6 +172,86 @@ class SARObservationDirectionQuery(EnumQuery):
 """
         expected_lines = expected.split("\n")
         actual = build_extension(eo_definition)
+        actual_lines = actual.split("\n")
+        for a in zip(expected_lines, actual_lines):
+            if a[0] != a[1]:
+                self.assertEqual(a[0], a[1])
+        self.assertEqual(expected, actual)
+
+    def test_extension_sar_1(self):
+        expected = """class SARExtension(Extension):
+    \"\"\"
+    STAC SAR Extension to a STAC Item
+    \"\"\"
+    def __init__(self, query_block: QueryBlock):
+        super().__init__(query_block)
+        self.center_frequency = NumberQuery.init_with_limits("sar:center_frequency", query_block, min_value=None, max_value=None)
+        self.frequency_band = FrequencyBandQuery.init_enums("sar:frequency_band", query_block, [x.value for x in FrequencyBand])
+        self.instrument_mode = StringQuery("sar:instrument_mode", self)
+        self.looks_equivalent_number = NumberQuery.init_with_limits("sar:looks_equivalent_number", query_block, min_value=0, max_value=None)
+        self.observation_direction = ObservationDirectionQuery.init_enums("sar:observation_direction", query_block, [x.value for x in ObservationDirection])
+        self.pixel_spacing_azimuth = NumberQuery.init_with_limits("sar:pixel_spacing_azimuth", query_block, min_value=0, max_value=None)
+        self.pixel_spacing_range = NumberQuery.init_with_limits("sar:pixel_spacing_range", query_block, min_value=0, max_value=None)
+        self.product_type = StringQuery("sar:product_type", self)
+        self.resolution_azimuth = NumberQuery.init_with_limits("sar:resolution_azimuth", query_block, min_value=0, max_value=None)
+        self.resolution_range = NumberQuery.init_with_limits("sar:resolution_range", query_block, min_value=0, max_value=None)
+
+
+class FrequencyBand(Enum):
+    P = "P"
+    L = "L"
+    S = "S"
+    C = "C"
+    X = "X"
+    Ku = "Ku"
+    K = "K"
+    Ka = "Ka"
+
+
+class FrequencyBandQuery(EnumQuery):
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
+        o = FrequencyBandQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: FrequencyBand) -> QueryBlock:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[FrequencyBand]) -> QueryBlock:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+
+class ObservationDirection(Enum):
+    left = "left"
+    right = "right"
+
+
+class ObservationDirectionQuery(EnumQuery):
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
+        o = ObservationDirectionQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: ObservationDirection) -> QueryBlock:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[ObservationDirection]) -> QueryBlock:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+"""
+        expected_lines = expected.split("\n")
+        actual = build_extension(sar_definition)
         actual_lines = actual.split("\n")
         for a in zip(expected_lines, actual_lines):
             if a[0] != a[1]:
