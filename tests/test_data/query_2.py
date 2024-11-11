@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 from datetime import date, datetime, timedelta, timezone
 from enum import Enum
 from json import JSONEncoder
@@ -237,33 +236,28 @@ class Query(QueryBase):
             }
 
     def equals(self, value) -> QueryBlock:
-        self._check(value)
         self._eq_value = value
         return self._parent_obj
 
     def gt(self, value) -> QueryBlock:
-        self._check(value)
         self._greater_check(value)
         self._gt_value = value
         self._gt_operand = ">"
         return self._parent_obj
 
     def gte(self, value) -> QueryBlock:
-        self._check(value)
         self._greater_check(value)
         self._gt_value = value
         self._gt_operand = ">="
         return self._parent_obj
 
     def lt(self, value) -> QueryBlock:
-        self._check(value)
         self._less_check(value)
         self._lt_value = value
         self._lt_operand = "<"
         return self._parent_obj
 
     def lte(self, value) -> QueryBlock:
-        self._check(value)
         self._less_check(value)
         self._lt_value = value
         self._lt_operand = "<="
@@ -314,17 +308,17 @@ class DateQuery(Query):
 class NumberQuery(Query):
     _min_value = None
     _max_value = None
-    _is_int = False
 
     def equals(self, value):
-        return super().equals(value)
+        # self._equals_check()
+        self._eq_value = value
+        return self._parent_obj
 
     @classmethod
-    def init_with_limits(cls, field_name, parent_obj: QueryBlock, min_value=None, max_value=None, is_int=False):
+    def init_with_limits(cls, field_name, parent_obj: QueryBlock, min_value=None, max_value=None):
         c = NumberQuery(field_name, parent_obj)
         c._min_value = min_value
         c._max_value = max_value
-        c._is_int = is_int
         return c
 
     def _greater_check(self, value):
@@ -342,10 +336,6 @@ class NumberQuery(Query):
         if self._max_value is not None and value > self._max_value:
             raise ValueError(f"setting value of {value}, "
                              f"can't be greater than max value of {self._max_value} for {self._field_name}")
-
-    def _check(self, value):
-        if self._is_int and not isinstance(value, int) and math.floor(value) != value:
-            raise ValueError(f"for integer type, must use ints. {value} is not an int")
 
 
 class SpatialQuery(QueryBase):
@@ -383,6 +373,36 @@ class Extension:
         return args
 
 
+class FrequencyBand(Enum):
+    P = "P"
+    L = "L"
+    S = "S"
+    C = "C"
+    X = "X"
+    Ku = "Ku"
+    K = "K"
+    Ka = "Ka"
+
+
+class FrequencyBandQuery(EnumQuery):
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
+        o = FrequencyBandQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: FrequencyBand) -> QueryBlock:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[FrequencyBand]) -> QueryBlock:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+
 class ObservationDirection(Enum):
     left = "left"
     right = "right"
@@ -394,12 +414,6 @@ class ObservationDirectionQuery(EnumQuery):
         o = ObservationDirectionQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
-
-    def left(self) -> QueryBlock:
-        return self.equals(ObservationDirection.left)
-
-    def right(self) -> QueryBlock:
-        return self.equals(ObservationDirection.right)
 
     def equals(self, value: ObservationDirection) -> QueryBlock:
         self._check([value.value])
@@ -413,23 +427,65 @@ class ObservationDirectionQuery(EnumQuery):
         return self._parent_obj
 
 
-class EOExtension(Extension):
-    """
-    STAC EO Extension for STAC Items and STAC Collections.
-    """
-    def __init__(self, query_block: QueryBlock):
-        super().__init__(query_block)
-        self.cloud_cover = NumberQuery.init_with_limits("eo:cloud_cover", query_block, min_value=0, max_value=100)
-        self.snow_cover = NumberQuery.init_with_limits("eo:snow_cover", query_block, min_value=0, max_value=100)
-        self.center_wavelength = NumberQuery.init_with_limits("eo:center_wavelength", query_block, min_value=0)
-        self.full_width_half_max = NumberQuery.init_with_limits("eo:full_width_half_max", query_block, min_value=0)
-        self.solar_illumination = NumberQuery.init_with_limits("eo:solar_illumination", query_block, min_value=0)
-
-
 class SARExtension(Extension):
+    """
+    STAC SAR Extension to a STAC Item
+    """
     def __init__(self, query_block: QueryBlock):
         super().__init__(query_block)
+        self.center_frequency = NumberQuery.init_with_limits("sar:center_frequency", query_block, min_value=None, max_value=None)
+        self.frequency_band = FrequencyBandQuery.init_enums("sar:frequency_band", query_block, [x.value for x in FrequencyBand])
+        self.instrument_mode = StringQuery("sar:instrument_mode", query_block)
+        self.looks_azimuth = NumberQuery.init_with_limits("sar:looks_azimuth", query_block, min_value=0, max_value=None, is_int=True)
+        self.looks_range = NumberQuery.init_with_limits("sar:looks_range", query_block, min_value=0, max_value=None, is_int=True)
         self.observation_direction = ObservationDirectionQuery.init_enums("sar:observation_direction", query_block, [x.value for x in ObservationDirection])
+        self.product_type = StringQuery("sar:product_type", query_block)
+        self.resolution_azimuth = NumberQuery.init_with_limits("sar:resolution_azimuth", query_block, min_value=0, max_value=None)
+        self.resolution_range = NumberQuery.init_with_limits("sar:resolution_range", query_block, min_value=0, max_value=None)
+
+
+class ViewExtension(Extension):
+    """
+    STAC View Geometry Extension for STAC Items and STAC Collections.
+    """
+    def __init__(self, query_block: QueryBlock):
+        super().__init__(query_block)
+        self.azimuth = NumberQuery.init_with_limits("view:azimuth", query_block, min_value=0, max_value=360)
+        self.incidence_angle = NumberQuery.init_with_limits("view:incidence_angle", query_block, min_value=0, max_value=90)
+
+
+class OrbitState(Enum):
+    ascending = "ascending"
+    descending = "descending"
+    geostationary = "geostationary"
+
+
+class OrbitStateQuery(EnumQuery):
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
+        o = OrbitStateQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: OrbitState) -> QueryBlock:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[OrbitState]) -> QueryBlock:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+
+class SatExtension(Extension):
+    """
+    STAC Sat Extension to a STAC Item.
+    """
+    def __init__(self, query_block: QueryBlock):
+        super().__init__(query_block)
+        self.orbit_state = OrbitStateQuery.init_enums("sat:orbit_state", query_block, [x.value for x in OrbitState])
 
 
 class QueryBlock:
@@ -438,12 +494,14 @@ class QueryBlock:
         self.datetime = DateQuery("datetime", self)
         self.id = StringQuery("id", self)
         self.geometry = SpatialQuery("geometry", self)
-        self.updated = DateQuery("updated", self)
         self.created = DateQuery("created", self)
+        self.updated = DateQuery("updated", self)
+        self.start_datetime = DateQuery("start_datetime", self)
+        self.end_datetime = DateQuery("end_datetime", self)
         self.platform = StringQuery("platform", self)
-        self.gsd = NumberQuery.init_with_limits("gsd", self, min_value=0)
-        self.eo = EOExtension(self)
         self.sar = SARExtension(self)
+        self.view = ViewExtension(self)
+        self.sat = SatExtension(self)
 
     def build_query(self, top_level_is_or=False):
         properties = list(vars(self).values())

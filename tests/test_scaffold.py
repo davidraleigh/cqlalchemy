@@ -7,10 +7,14 @@ from cqlalchemy.scaffold.build import ExtensionBuilder, build_enum, build_query_
 eo_definition = json.loads(pkgutil.get_data(__name__, "test_data/eo.schema.json").decode('utf-8'))
 sar_definition = json.loads(pkgutil.get_data(__name__, "test_data/sar.schema.json").decode('utf-8'))
 view_definition = json.loads(pkgutil.get_data(__name__, "test_data/view.schema.json").decode('utf-8'))
-query_1_expected = pkgutil.get_data(__name__, "test_data/query_1.py").decode('utf-8')
+sat_definition = json.loads(pkgutil.get_data(__name__, "test_data/sat.schema.json").decode('utf-8'))
 view_1_expected = pkgutil.get_data(__name__, "test_data/view.py.txt").decode('utf-8')
+sat_1_expected = pkgutil.get_data(__name__, "test_data/sat.py.txt").decode('utf-8')
 sar_1_expected = pkgutil.get_data(__name__, "test_data/sar.py.txt").decode('utf-8')
 eo_1_expected = pkgutil.get_data(__name__, "test_data/eo.py.txt").decode('utf-8')
+
+query_1_expected = pkgutil.get_data(__name__, "test_data/query_1.py").decode('utf-8')
+query_2_expected = pkgutil.get_data(__name__, "test_data/query_2.py").decode('utf-8')
 
 
 class TestBuild(TestCase):
@@ -188,11 +192,45 @@ class SARObservationDirectionQuery(EnumQuery):
                 self.assertEqual(a[0], a[1])
         self.assertEqual(view_1_expected, actual)
 
+    def test_extension_sat_1(self):
+        expected_lines = sat_1_expected.split("\n")
+        actual = ExtensionBuilder(sat_definition).extension
+        actual_lines = actual.split("\n")
+        for a in zip(expected_lines, actual_lines):
+            if a[0] != a[1]:
+                self.assertEqual(a[0], a[1])
+        self.assertEqual(sat_1_expected, actual)
+
     def test_query_py_1(self):
         expected_lines = query_1_expected.split("\n")
-        actual = build_query_file([eo_definition, sar_definition])
+        actual = build_query_file([eo_definition, sar_definition, view_definition, sat_definition])
         actual_lines = actual.split("\n")
         for a in zip(expected_lines, actual_lines):
             if a[0] != a[1]:
                 self.assertEqual(a[0], a[1])
         self.assertEqual(query_1_expected, actual)
+
+    def test_query_py_2(self):
+        expected_lines = query_2_expected.split("\n")
+        fields_to_exclude = ["gsd",
+                             "mission",
+                             "constellation",
+                             "sat:absolute_orbit",
+                             "sat:anx_datetime",
+                             "sat:platform_international_designator",
+                             "sat:relative_orbit",
+                             "view:off_nadir",
+                             "view:sun_azimuth",
+                             "view:sun_elevation",
+                             "sar:looks_equivalent_number",
+                             "sar:pixel_spacing_azimuth",
+                             "sar:pixel_spacing_range",
+                             ]
+        actual = build_query_file(
+            [sar_definition, view_definition, sat_definition],
+            fields_to_exclude=fields_to_exclude)
+        actual_lines = actual.split("\n")
+        for a in zip(expected_lines, actual_lines):
+            if a[0] != a[1]:
+                self.assertEqual(a[0], a[1])
+        self.assertEqual(query_2_expected, actual)

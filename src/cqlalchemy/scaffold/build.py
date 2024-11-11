@@ -7,18 +7,21 @@ logger = logging.getLogger(__name__)
 enum_template = Template(pkgutil.get_data(__name__, "templates/enum.template").decode('utf-8'))
 extension_template = Template(pkgutil.get_data(__name__, "templates/extension.template").decode('utf-8'))
 query_template = Template(pkgutil.get_data(__name__, "templates/query.template").decode('utf-8'))
+common_template = Template(pkgutil.get_data(__name__, "templates/common.template").decode('utf-8'))
 
 ENUM_MEMBERS = "    {x} = \"{x}\"\n"
 ENUM_QUERY_CLASS = "\n    def {x}(self) -> QueryBlock:\n        return self.equals({class_name}.{x})\n"
-NUMBER_QUERY_ATTRIBUTE = "        self.{partial_name} = NumberQuery.init_with_limits(\"{field_name}\", query_block, " \
+NUMBER_QUERY_ATTR = "        self.{partial_name} = NumberQuery.init_with_limits(\"{field_name}\", query_block, " \
                      "min_value={min_value}, max_value={max_value})\n"
-INTEGER_QUERY_ATTRIBUTE = "        self.{partial_name} = NumberQuery.init_with_limits(\"{field_name}\", query_block, " \
+INTEGER_QUERY_ATTR = "        self.{partial_name} = NumberQuery.init_with_limits(\"{field_name}\", query_block, " \
                      "min_value={min_value}, max_value={max_value}, is_int=True)\n"
-DATETIME_QUERY_ATTR = "        self.{partial_name} = DateQuery(\"field_name\", self)"
-STRING_QUERY_ATTRIBUTE = "        self.{partial_name} = StringQuery(\"{field_name}\", self)\n"
-ENUM_QUERY_ATTRIBUTE = "        self.{partial_name} = {class_name}Query.init_enums(\"{field_name}\", query_block, " \
+DATETIME_QUERY_EXT_ATTR = "        self.{partial_name} = DateQuery(\"field_name\", query_block)\n"
+DATETIME_QUERY_ATTR = "        self.{partial_name} = DateQuery(\"field_name\", self)\n"
+STRING_QUERY_EXT_ATTR = "        self.{partial_name} = StringQuery(\"{field_name}\", query_block)\n"
+STRING_QUERY_ATTR = "        self.{partial_name} = StringQuery(\"{field_name}\", self)\n"
+ENUM_QUERY_ATTR = "        self.{partial_name} = {class_name}Query.init_enums(\"{field_name}\", query_block, " \
                    "[x.value for x in {class_name}])\n"
-EXTENSION_ATTRIBUTE = "\n        self.{jsond_prefix} = {class_name}(self)"
+EXTENSION_ATTR = "\n        self.{jsond_prefix} = {class_name}(self)"
 
 
 def build_enum(field_name: str, enum_object: dict, full_name=False, add_unique=False):
@@ -42,7 +45,9 @@ def build_enum(field_name: str, enum_object: dict, full_name=False, add_unique=F
 
 
 class ExtensionBuilder:
-    def __init__(self, extension_schema, force_string_enum=False):
+    def __init__(self, extension_schema, force_string_enum=False, fields_to_exclude=None):
+        if fields_to_exclude is None:
+            fields_to_exclude = []
         description = extension_schema["description"]
         definitions = extension_schema["definitions"]
         field_names = list(definitions["fields"]["properties"].keys())
@@ -58,6 +63,9 @@ class ExtensionBuilder:
         enum_definitions = ""
         attribute_instantiations = ""
         for field_name in field_names:
+            if field_name in fields_to_exclude:
+                logger.info(f"skipping the field {field_name} as it is included in {fields_to_exclude}")
+                continue
             partial_name = field_name.split(":")[1]
             field_obj = definitions[field_name]
             min_value = None
@@ -67,27 +75,28 @@ class ExtensionBuilder:
             if "maximum" in field_obj:
                 max_value = field_obj["maximum"]
             if field_obj["type"] == "number":
-                attribute_instantiations += NUMBER_QUERY_ATTRIBUTE.format(field_name=field_name,
-                                                                          partial_name=partial_name,
-                                                                          min_value=min_value,
-                                                                          max_value=max_value)
+                attribute_instantiations += NUMBER_QUERY_ATTR.format(field_name=field_name,
+                                                                     partial_name=partial_name,
+                                                                     min_value=min_value,
+                                                                     max_value=max_value)
             elif field_obj["type"] == "integer":
-                attribute_instantiations += INTEGER_QUERY_ATTRIBUTE.format(field_name=field_name,
-                                                                           partial_name=partial_name,
-                                                                           min_value=min_value,
-                                                                           max_value=max_value)
+                attribute_instantiations += INTEGER_QUERY_ATTR.format(field_name=field_name,
+                                                                      partial_name=partial_name,
+                                                                      min_value=min_value,
+                                                                      max_value=max_value)
             elif field_obj["type"] == "string" and "format" in field_obj and field_obj["format"] == "date-time":
-                attribute_instantiations += DATETIME_QUERY_ATTR.format(field_name=field_name, partial_name=partial_name)
+                attribute_instantiations += DATETIME_QUERY_EXT_ATTR.format(field_name=field_name,
+                                                                           partial_name=partial_name)
             elif field_obj["type"] == "string" and "enum" in field_obj and not force_string_enum:
                 enum_definition, class_name = build_enum(field_name, field_obj)
                 enum_definitions += enum_definition
                 enum_definitions += "\n\n"
-                attribute_instantiations += ENUM_QUERY_ATTRIBUTE.format(field_name=field_name,
-                                                                        partial_name=partial_name,
-                                                                        class_name=class_name)
+                attribute_instantiations += ENUM_QUERY_ATTR.format(field_name=field_name,
+                                                                   partial_name=partial_name,
+                                                                   class_name=class_name)
             elif field_obj["type"] == "string":
-                attribute_instantiations += STRING_QUERY_ATTRIBUTE.format(field_name=field_name,
-                                                                          partial_name=partial_name)
+                attribute_instantiations += STRING_QUERY_EXT_ATTR.format(field_name=field_name,
+                                                                         partial_name=partial_name)
             elif field_obj["type"] == "array":
                 logger.info(f"not producing type {field_obj['type']}")
             else:
@@ -99,15 +108,20 @@ class ExtensionBuilder:
         self.class_name = f"{extension_name}Extension"
 
 
-def build_query_file(extension_list: list[dict]):
+def build_query_file(extension_list: list[dict], fields_to_exclude=None):
     extension_definitions = ""
     extension_attributes = ""
     for extension_schema in extension_list:
-        extension_builder = ExtensionBuilder(extension_schema)
+        extension_builder = ExtensionBuilder(extension_schema, fields_to_exclude=fields_to_exclude)
         extension_definitions += f"\n\n{extension_builder.extension}"
-        extension_attributes += EXTENSION_ATTRIBUTE.format(jsond_prefix=extension_builder.jsond_prefix,
-                                                           class_name=extension_builder.class_name)
+        extension_attributes += EXTENSION_ATTR.format(jsond_prefix=extension_builder.jsond_prefix,
+                                                      class_name=extension_builder.class_name)
 
+    common_props_lines = common_template.substitute().split("\n")
+    common_props = "\n"
+    if fields_to_exclude is not None:
+        common_props_lines = [line for line in common_props_lines if not any(field in line for field in fields_to_exclude)]
+    common_props += "\n".join(common_props_lines)
     return query_template.substitute(extension_definitions=extension_definitions,
-                                     common_attributes="",
+                                     common_attributes=common_props,
                                      extension_attributes=extension_attributes)

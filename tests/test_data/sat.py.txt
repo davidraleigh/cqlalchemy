@@ -1,0 +1,36 @@
+class OrbitState(Enum):
+    ascending = "ascending"
+    descending = "descending"
+    geostationary = "geostationary"
+
+
+class OrbitStateQuery(EnumQuery):
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
+        o = OrbitStateQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: OrbitState) -> QueryBlock:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[OrbitState]) -> QueryBlock:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+
+class SatExtension(Extension):
+    """
+    STAC Sat Extension to a STAC Item.
+    """
+    def __init__(self, query_block: QueryBlock):
+        super().__init__(query_block)
+        self.absolute_orbit = NumberQuery.init_with_limits("sat:absolute_orbit", query_block, min_value=1, max_value=None, is_int=True)
+        self.anx_datetime = DateQuery("field_name", query_block)
+        self.orbit_state = OrbitStateQuery.init_enums("sat:orbit_state", query_block, [x.value for x in OrbitState])
+        self.platform_international_designator = StringQuery("sat:platform_international_designator", query_block)
+        self.relative_orbit = NumberQuery.init_with_limits("sat:relative_orbit", query_block, min_value=1, max_value=None, is_int=True)

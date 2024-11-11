@@ -1,0 +1,8 @@
+        self.created = DateQuery("created", self)
+        self.updated = DateQuery("updated", self)
+        self.start_datetime = DateQuery("start_datetime", self)
+        self.end_datetime = DateQuery("end_datetime", self)
+        self.platform = StringQuery("platform", self)
+        self.constellation = StringQuery("constellation", self)
+        self.mission = StringQuery("mission", self)
+        self.gsd = NumberQuery.init_with_limits("gsd", self, min_value=0)

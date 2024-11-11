@@ -491,16 +491,67 @@ class SARExtension(Extension):
         super().__init__(query_block)
         self.center_frequency = NumberQuery.init_with_limits("sar:center_frequency", query_block, min_value=None, max_value=None)
         self.frequency_band = FrequencyBandQuery.init_enums("sar:frequency_band", query_block, [x.value for x in FrequencyBand])
-        self.instrument_mode = StringQuery("sar:instrument_mode", self)
+        self.instrument_mode = StringQuery("sar:instrument_mode", query_block)
         self.looks_azimuth = NumberQuery.init_with_limits("sar:looks_azimuth", query_block, min_value=0, max_value=None, is_int=True)
         self.looks_equivalent_number = NumberQuery.init_with_limits("sar:looks_equivalent_number", query_block, min_value=0, max_value=None)
         self.looks_range = NumberQuery.init_with_limits("sar:looks_range", query_block, min_value=0, max_value=None, is_int=True)
         self.observation_direction = ObservationDirectionQuery.init_enums("sar:observation_direction", query_block, [x.value for x in ObservationDirection])
         self.pixel_spacing_azimuth = NumberQuery.init_with_limits("sar:pixel_spacing_azimuth", query_block, min_value=0, max_value=None)
         self.pixel_spacing_range = NumberQuery.init_with_limits("sar:pixel_spacing_range", query_block, min_value=0, max_value=None)
-        self.product_type = StringQuery("sar:product_type", self)
+        self.product_type = StringQuery("sar:product_type", query_block)
         self.resolution_azimuth = NumberQuery.init_with_limits("sar:resolution_azimuth", query_block, min_value=0, max_value=None)
         self.resolution_range = NumberQuery.init_with_limits("sar:resolution_range", query_block, min_value=0, max_value=None)
+
+
+class ViewExtension(Extension):
+    """
+    STAC View Geometry Extension for STAC Items and STAC Collections.
+    """
+    def __init__(self, query_block: QueryBlock):
+        super().__init__(query_block)
+        self.azimuth = NumberQuery.init_with_limits("view:azimuth", query_block, min_value=0, max_value=360)
+        self.incidence_angle = NumberQuery.init_with_limits("view:incidence_angle", query_block, min_value=0, max_value=90)
+        self.off_nadir = NumberQuery.init_with_limits("view:off_nadir", query_block, min_value=0, max_value=90)
+        self.sun_azimuth = NumberQuery.init_with_limits("view:sun_azimuth", query_block, min_value=0, max_value=360)
+        self.sun_elevation = NumberQuery.init_with_limits("view:sun_elevation", query_block, min_value=-90, max_value=90)
+
+
+class OrbitState(Enum):
+    ascending = "ascending"
+    descending = "descending"
+    geostationary = "geostationary"
+
+
+class OrbitStateQuery(EnumQuery):
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
+        o = OrbitStateQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: OrbitState) -> QueryBlock:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[OrbitState]) -> QueryBlock:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+
+class SatExtension(Extension):
+    """
+    STAC Sat Extension to a STAC Item.
+    """
+    def __init__(self, query_block: QueryBlock):
+        super().__init__(query_block)
+        self.absolute_orbit = NumberQuery.init_with_limits("sat:absolute_orbit", query_block, min_value=1, max_value=None, is_int=True)
+        self.anx_datetime = DateQuery("field_name", query_block)
+        self.orbit_state = OrbitStateQuery.init_enums("sat:orbit_state", query_block, [x.value for x in OrbitState])
+        self.platform_international_designator = StringQuery("sat:platform_international_designator", query_block)
+        self.relative_orbit = NumberQuery.init_with_limits("sat:relative_orbit", query_block, min_value=1, max_value=None, is_int=True)
 
 
 class QueryBlock:
@@ -509,8 +560,18 @@ class QueryBlock:
         self.datetime = DateQuery("datetime", self)
         self.id = StringQuery("id", self)
         self.geometry = SpatialQuery("geometry", self)
+        self.created = DateQuery("created", self)
+        self.updated = DateQuery("updated", self)
+        self.start_datetime = DateQuery("start_datetime", self)
+        self.end_datetime = DateQuery("end_datetime", self)
+        self.platform = StringQuery("platform", self)
+        self.constellation = StringQuery("constellation", self)
+        self.mission = StringQuery("mission", self)
+        self.gsd = NumberQuery.init_with_limits("gsd", self, min_value=0)
         self.eo = EOExtension(self)
         self.sar = SARExtension(self)
+        self.view = ViewExtension(self)
+        self.sat = SatExtension(self)
 
     def build_query(self, top_level_is_or=False):
         properties = list(vars(self).values())
