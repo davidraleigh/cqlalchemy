@@ -1,6 +1,10 @@
+import json
+import pkgutil
 from unittest import TestCase
 
-from cqlalchemy.scaffold.build import build_enum
+from cqlalchemy.scaffold.build import build_enum, build_extension
+
+eo_definition = json.loads(pkgutil.get_data(__name__, "test_data/eo.schema.json").decode('utf-8'))
 
 
 class TestBuild(TestCase):
@@ -145,6 +149,28 @@ class SARObservationDirectionQuery(EnumQuery):
 """
         expected_lines = expected.split("\n")
         actual = build_enum(input_key, input_obj, full_name=True, add_unique=True)
+        actual_lines = actual.split("\n")
+        for a in zip(expected_lines, actual_lines):
+            if a[0] != a[1]:
+                self.assertEqual(a[0], a[1])
+        self.assertEqual(expected, actual)
+
+    def test_extension_eo_1(self):
+        expected = """class EOExtension(Extension):
+    \"\"\"
+    STAC EO Extension for STAC Items and STAC Collections.
+    \"\"\"
+    def __init__(self, query_block: QueryBlock):
+        super().__init__(query_block)
+        self.center_wavelength = NumberQuery.init_with_limits("eo:center_wavelength", query_block, min_value=None, max_value=None)
+        self.cloud_cover = NumberQuery.init_with_limits("eo:cloud_cover", query_block, min_value=0, max_value=100)
+        self.common_name = StringQuery("eo:common_name", self)
+        self.full_width_half_max = NumberQuery.init_with_limits("eo:full_width_half_max", query_block, min_value=None, max_value=None)
+        self.snow_cover = NumberQuery.init_with_limits("eo:snow_cover", query_block, min_value=0, max_value=100)
+        self.solar_illumination = NumberQuery.init_with_limits("eo:solar_illumination", query_block, min_value=0, max_value=None)
+"""
+        expected_lines = expected.split("\n")
+        actual = build_extension(eo_definition)
         actual_lines = actual.split("\n")
         for a in zip(expected_lines, actual_lines):
             if a[0] != a[1]:

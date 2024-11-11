@@ -404,6 +404,9 @@ class Extension:
 
 
 class EOExtension(Extension):
+    """
+    STAC EO Extension for STAC Items and STAC Collections.
+    """
     def __init__(self, query_block: QueryBlock):
         super().__init__(query_block)
         self.cloud_cover = NumberQuery.init_with_limits("eo:cloud_cover", query_block, min_value=0, max_value=100)
