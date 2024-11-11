@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from datetime import date, datetime, timedelta, timezone
 from enum import Enum
 from json import JSONEncoder
@@ -236,28 +237,33 @@ class Query(QueryBase):
             }
 
     def equals(self, value) -> QueryBlock:
+        self._check(value)
         self._eq_value = value
         return self._parent_obj
 
     def gt(self, value) -> QueryBlock:
+        self._check(value)
         self._greater_check(value)
         self._gt_value = value
         self._gt_operand = ">"
         return self._parent_obj
 
     def gte(self, value) -> QueryBlock:
+        self._check(value)
         self._greater_check(value)
         self._gt_value = value
         self._gt_operand = ">="
         return self._parent_obj
 
     def lt(self, value) -> QueryBlock:
+        self._check(value)
         self._less_check(value)
         self._lt_value = value
         self._lt_operand = "<"
         return self._parent_obj
 
     def lte(self, value) -> QueryBlock:
+        self._check(value)
         self._less_check(value)
         self._lt_value = value
         self._lt_operand = "<="
@@ -308,17 +314,17 @@ class DateQuery(Query):
 class NumberQuery(Query):
     _min_value = None
     _max_value = None
+    _is_int = False
 
     def equals(self, value):
-        # self._equals_check()
-        self._eq_value = value
-        return self._parent_obj
+        return super().equals(value)
 
     @classmethod
-    def init_with_limits(cls, field_name, parent_obj: QueryBlock, min_value=None, max_value=None):
+    def init_with_limits(cls, field_name, parent_obj: QueryBlock, min_value=None, max_value=None, is_int=False):
         c = NumberQuery(field_name, parent_obj)
         c._min_value = min_value
         c._max_value = max_value
+        c._is_int = is_int
         return c
 
     def _greater_check(self, value):
@@ -336,6 +342,10 @@ class NumberQuery(Query):
         if self._max_value is not None and value > self._max_value:
             raise ValueError(f"setting value of {value}, "
                              f"can't be greater than max value of {self._max_value} for {self._field_name}")
+
+    def _check(self, value):
+        if self._is_int and not isinstance(value, int) and math.floor(value) != value:
+            raise ValueError(f"for integer type, must use ints. {value} is not an int")
 
 
 class SpatialQuery(QueryBase):

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from shapely import Point
 
-from cqlalchemy.stac.query import ObservationDirection, QueryBlock
+from cqlalchemy.stac.query import NumberQuery, ObservationDirection, QueryBlock
 
 
 class STACTestCase(unittest.TestCase):
@@ -208,6 +208,13 @@ class STACTestCase(unittest.TestCase):
         b_dict = b.build_query()
         self.assertEqual(b_dict["filter"]["args"][0]["args"][1][0], "left")
         self.assertEqual(b_dict["filter"]["args"][0]["args"][1][1], "right")
+
+    def test_number_query(self):
+        a = NumberQuery.init_with_limits("field", QueryBlock(), None, None, is_int=True)
+        self.assertRaises(ValueError, a.equals, 3.5)
+        self.assertIsNotNone(a.equals(value=3.0))
+        b = NumberQuery.init_with_limits("field", QueryBlock())
+        self.assertIsNotNone(b.equals(value=3.3))
 
 
 if __name__ == '__main__':

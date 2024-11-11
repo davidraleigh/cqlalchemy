@@ -1,5 +1,8 @@
+import logging
 import pkgutil
 from string import Template
+
+logger = logging.getLogger(__name__)
 
 enum_template = Template(pkgutil.get_data(__name__, "templates/enum.template").decode('utf-8'))
 extension_template = Template(pkgutil.get_data(__name__, "templates/extension.template").decode('utf-8'))
@@ -9,9 +12,13 @@ ENUM_MEMBERS = "    {x} = \"{x}\"\n"
 ENUM_QUERY_CLASS = "\n    def {x}(self) -> QueryBlock:\n        return self.equals({class_name}.{x})\n"
 NUMBER_QUERY_ATTRIBUTE = "        self.{partial_name} = NumberQuery.init_with_limits(\"{field_name}\", query_block, " \
                      "min_value={min_value}, max_value={max_value})\n"
+INTEGER_QUERY_ATTRIBUTE = "        self.{partial_name} = NumberQuery.init_with_limits(\"{field_name}\", query_block, " \
+                     "min_value={min_value}, max_value={max_value}, is_int=True)\n"
+DATETIME_QUERY_ATTR = "        self.{partial_name} = DateQuery(\"field_name\", self)"
 STRING_QUERY_ATTRIBUTE = "        self.{partial_name} = StringQuery(\"{field_name}\", self)\n"
 ENUM_QUERY_ATTRIBUTE = "        self.{partial_name} = {class_name}Query.init_enums(\"{field_name}\", query_block, " \
                    "[x.value for x in {class_name}])\n"
+EXTENSION_ATTRIBUTE = "\n        self.{jsond_prefix} = {class_name}(self)"
 
 
 def build_enum(field_name: str, enum_object: dict, full_name=False, add_unique=False):
@@ -64,6 +71,13 @@ class ExtensionBuilder:
                                                                           partial_name=partial_name,
                                                                           min_value=min_value,
                                                                           max_value=max_value)
+            elif field_obj["type"] == "integer":
+                attribute_instantiations += INTEGER_QUERY_ATTRIBUTE.format(field_name=field_name,
+                                                                           partial_name=partial_name,
+                                                                           min_value=min_value,
+                                                                           max_value=max_value)
+            elif field_obj["type"] == "string" and "format" in field_obj and field_obj["format"] == "date-time":
+                attribute_instantiations += DATETIME_QUERY_ATTR.format(field_name=field_name, partial_name=partial_name)
             elif field_obj["type"] == "string" and "enum" in field_obj and not force_string_enum:
                 enum_definition, class_name = build_enum(field_name, field_obj)
                 enum_definitions += enum_definition
@@ -74,6 +88,10 @@ class ExtensionBuilder:
             elif field_obj["type"] == "string":
                 attribute_instantiations += STRING_QUERY_ATTRIBUTE.format(field_name=field_name,
                                                                           partial_name=partial_name)
+            elif field_obj["type"] == "array":
+                logger.info(f"not producing type {field_obj['type']}")
+            else:
+                raise ValueError(f"{field_obj['type']} not a processed type")
 
         self.extension = enum_definitions + extension_template.substitute(extension_name=extension_name,
                                                                           description=description,
@@ -82,14 +100,13 @@ class ExtensionBuilder:
 
 
 def build_query_file(extension_list: list[dict]):
-    extension_builders = []
+    extension_definitions = ""
+    extension_attributes = ""
     for extension_schema in extension_list:
-        extension_builders.append(ExtensionBuilder(extension_schema))
-
-    extension_definitions = "\n\n"
-    extension_definitions += "\n\n".join([x.extension for x in extension_builders])
-    extension_attributes = "\n"
-    extension_attributes += "\n".join([f"        self.{x.jsond_prefix} = {x.class_name}(self)" for x in extension_builders])
+        extension_builder = ExtensionBuilder(extension_schema)
+        extension_definitions += f"\n\n{extension_builder.extension}"
+        extension_attributes += EXTENSION_ATTRIBUTE.format(jsond_prefix=extension_builder.jsond_prefix,
+                                                           class_name=extension_builder.class_name)
 
     return query_template.substitute(extension_definitions=extension_definitions,
                                      common_attributes="",
