@@ -1,7 +1,6 @@
 class ${class_name}(Enum):
 ${enum_key_values}
 
-
 class ${class_name}Query(EnumQuery):
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):

@@ -2,10 +2,125 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
 from enum import Enum
+from json import JSONEncoder
 
 from shapely.geometry.base import BaseGeometry
 
-from cqlalchemy.stac.base_query import QueryBase, QueryTuple, FilterTuple
+
+class DateTimeEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, (date, datetime)):
+            return obj.isoformat()
+
+
+class QueryTuple:
+    def __init__(self, left, op: str, right):
+        self.left = left
+        self.op = op
+        self.right = right
+
+    def __or__(self, other):
+        value = QueryTuple(self, "|", other)
+        if value.check_parents(bad_op="&"):
+            raise ValueError("can't mix '&' and '|' in `filter` function. must be all 'or', "
+                             "or all 'and' (except inside of the 'filter_grouping' function)")
+        return value
+
+    def __and__(self, other):
+        value = QueryTuple(self, "&", other)
+        if value.check_parents(bad_op="|"):
+            raise ValueError("can't mix '&' and '|' in `filter` function. must be all 'or', "
+                             "or all 'and' (except inside of the 'filter_grouping' function)")
+        return value
+
+    def check_parents(self, bad_op):
+        if isinstance(self.left, QueryBase):
+            return False
+
+        if isinstance(self.left, FilterTuple):
+            if self.right.check_parents(bad_op):
+                return True
+            return False
+        if isinstance(self.right, FilterTuple):
+            if self.left.check_parents(bad_op):
+                return True
+            return False
+
+        if self.op == bad_op:
+            return True
+        if self.left.check_parents(bad_op):
+            return True
+        if self.right.check_parents(bad_op):
+            return True
+        return False
+
+    @staticmethod
+    def _build_query(query_tuple: QueryTuple, filter_query: dict):
+        if isinstance(query_tuple.left, QueryBase):
+            filter_query["args"].append({"op": query_tuple.op,
+                                         "args": [query_tuple.left.property_obj, query_tuple.right]})
+        elif isinstance(query_tuple.left, FilterTuple):
+            filter_query["args"].append(query_tuple.left.build_query())
+            QueryTuple._build_query(query_tuple.right, filter_query)
+        elif isinstance(query_tuple.right, FilterTuple):
+            filter_query["args"].append(query_tuple.right.build_query())
+            QueryTuple._build_query(query_tuple.left, filter_query)
+        else:
+            QueryTuple._build_query(query_tuple.left, filter_query)
+            QueryTuple._build_query(query_tuple.right, filter_query)
+        return filter_query
+
+    def build_query(self):
+        filter_query = {"op": "and", "args": []}
+        filter_query = QueryTuple._build_query(self, filter_query)
+        if self.op == "|":
+            filter_query["op"] = "or"
+        return filter_query
+
+
+class FilterTuple(QueryTuple):
+    pass
+
+
+class QueryBase:
+    def __init__(self, field_name, parent_obj: QueryBlock):
+        self._field_name = field_name
+        self._parent_obj = parent_obj
+
+    def build_query(self):
+        pass
+
+    def __eq__(self, other):
+        return QueryTuple(self, "=", other)
+
+    def __gt__(self, other):
+        self._greater_check(other)
+        return QueryTuple(self, ">", other)
+
+    def __ge__(self, other):
+        self._greater_check(other)
+        return QueryTuple(self, ">=", other)
+
+    def __lt__(self, other):
+        self._less_check(other)
+        return QueryTuple(self, "<", other)
+
+    def __le__(self, other):
+        self._less_check(other)
+        return QueryTuple(self, "<=", other)
+
+    @property
+    def property_obj(self):
+        return {"property": self._field_name}
+
+    def _greater_check(self, value):
+        pass
+
+    def _less_check(self, value):
+        pass
+
+    def _check(self, value):
+        pass
 
 
 class BaseString(QueryBase):
@@ -56,7 +171,34 @@ class EnumQuery(BaseString):
             raise ValueError("eq, in or like cannot already be set")
 
 
+class ObservationDirection(Enum):
+    left = "left"
+    right = "right"
 
+
+class ObservationDirectionQuery(EnumQuery):
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
+        o = ObservationDirectionQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def left(self) -> QueryBlock:
+        return self.equals(ObservationDirection.left)
+
+    def right(self) -> QueryBlock:
+        return self.equals(ObservationDirection.right)
+
+    def equals(self, value: ObservationDirection) -> QueryBlock:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[ObservationDirection]) -> QueryBlock:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
 
 
 class StringQuery(BaseString):
