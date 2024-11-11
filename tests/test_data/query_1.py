@@ -373,6 +373,92 @@ class Extension:
         return args
 
 
+class CommonName(Enum):
+    pan = "pan"
+    coastal = "coastal"
+    blue = "blue"
+    green = "green"
+    green05 = "green05"
+    yellow = "yellow"
+    red = "red"
+    rededge = "rededge"
+    rededge071 = "rededge071"
+    rededge075 = "rededge075"
+    rededge078 = "rededge078"
+    nir = "nir"
+    nir08 = "nir08"
+    nir09 = "nir09"
+    cirrus = "cirrus"
+    swir16 = "swir16"
+    swir22 = "swir22"
+    lwir = "lwir"
+    lwir11 = "lwir11"
+    lwir12 = "lwir12"
+
+
+class CommonNameQuery(EnumQuery):
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
+        o = CommonNameQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: CommonName) -> QueryBlock:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[CommonName]) -> QueryBlock:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+
+class EOExtension(Extension):
+    """
+    STAC EO Extension for STAC Items and STAC Collections.
+    """
+    def __init__(self, query_block: QueryBlock):
+        super().__init__(query_block)
+        self.center_wavelength = NumberQuery.init_with_limits("eo:center_wavelength", query_block, min_value=None, max_value=None)
+        self.cloud_cover = NumberQuery.init_with_limits("eo:cloud_cover", query_block, min_value=0, max_value=100)
+        self.common_name = CommonNameQuery.init_enums("eo:common_name", query_block, [x.value for x in CommonName])
+        self.full_width_half_max = NumberQuery.init_with_limits("eo:full_width_half_max", query_block, min_value=None, max_value=None)
+        self.snow_cover = NumberQuery.init_with_limits("eo:snow_cover", query_block, min_value=0, max_value=100)
+        self.solar_illumination = NumberQuery.init_with_limits("eo:solar_illumination", query_block, min_value=0, max_value=None)
+
+
+class FrequencyBand(Enum):
+    P = "P"
+    L = "L"
+    S = "S"
+    C = "C"
+    X = "X"
+    Ku = "Ku"
+    K = "K"
+    Ka = "Ka"
+
+
+class FrequencyBandQuery(EnumQuery):
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
+        o = FrequencyBandQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: FrequencyBand) -> QueryBlock:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[FrequencyBand]) -> QueryBlock:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+
 class ObservationDirection(Enum):
     left = "left"
     right = "right"
@@ -384,12 +470,6 @@ class ObservationDirectionQuery(EnumQuery):
         o = ObservationDirectionQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
-
-    def left(self) -> QueryBlock:
-        return self.equals(ObservationDirection.left)
-
-    def right(self) -> QueryBlock:
-        return self.equals(ObservationDirection.right)
 
     def equals(self, value: ObservationDirection) -> QueryBlock:
         self._check([value.value])
@@ -403,35 +483,30 @@ class ObservationDirectionQuery(EnumQuery):
         return self._parent_obj
 
 
-class EOExtension(Extension):
-    """
-    STAC EO Extension for STAC Items and STAC Collections.
-    """
-    def __init__(self, query_block: QueryBlock):
-        super().__init__(query_block)
-        self.cloud_cover = NumberQuery.init_with_limits("eo:cloud_cover", query_block, min_value=0, max_value=100)
-        self.snow_cover = NumberQuery.init_with_limits("eo:snow_cover", query_block, min_value=0, max_value=100)
-        self.center_wavelength = NumberQuery.init_with_limits("eo:center_wavelength", query_block, min_value=0)
-        self.full_width_half_max = NumberQuery.init_with_limits("eo:full_width_half_max", query_block, min_value=0)
-        self.solar_illumination = NumberQuery.init_with_limits("eo:solar_illumination", query_block, min_value=0)
-
-
 class SARExtension(Extension):
+    """
+    STAC SAR Extension to a STAC Item
+    """
     def __init__(self, query_block: QueryBlock):
         super().__init__(query_block)
+        self.center_frequency = NumberQuery.init_with_limits("sar:center_frequency", query_block, min_value=None, max_value=None)
+        self.frequency_band = FrequencyBandQuery.init_enums("sar:frequency_band", query_block, [x.value for x in FrequencyBand])
+        self.instrument_mode = StringQuery("sar:instrument_mode", self)
+        self.looks_equivalent_number = NumberQuery.init_with_limits("sar:looks_equivalent_number", query_block, min_value=0, max_value=None)
         self.observation_direction = ObservationDirectionQuery.init_enums("sar:observation_direction", query_block, [x.value for x in ObservationDirection])
+        self.pixel_spacing_azimuth = NumberQuery.init_with_limits("sar:pixel_spacing_azimuth", query_block, min_value=0, max_value=None)
+        self.pixel_spacing_range = NumberQuery.init_with_limits("sar:pixel_spacing_range", query_block, min_value=0, max_value=None)
+        self.product_type = StringQuery("sar:product_type", self)
+        self.resolution_azimuth = NumberQuery.init_with_limits("sar:resolution_azimuth", query_block, min_value=0, max_value=None)
+        self.resolution_range = NumberQuery.init_with_limits("sar:resolution_range", query_block, min_value=0, max_value=None)
 
 
 class QueryBlock:
     def __init__(self):
         self._filter_expressions: list[QueryTuple] = []
         self.datetime = DateQuery("datetime", self)
-        self.updated = DateQuery("updated", self)
-        self.created = DateQuery("created", self)
         self.id = StringQuery("id", self)
-        self.platform = StringQuery("platform", self)
         self.geometry = SpatialQuery("geometry", self)
-        self.gsd = NumberQuery.init_with_limits("gsd", self, min_value=0)
         self.eo = EOExtension(self)
         self.sar = SARExtension(self)
 

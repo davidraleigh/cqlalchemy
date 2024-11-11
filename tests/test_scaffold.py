@@ -2,11 +2,15 @@ import json
 import pkgutil
 from unittest import TestCase
 
-from cqlalchemy.scaffold.build import build_enum, build_extension
+from cqlalchemy.scaffold.build import ExtensionBuilder, build_enum, build_query_file
 
 eo_definition = json.loads(pkgutil.get_data(__name__, "test_data/eo.schema.json").decode('utf-8'))
 sar_definition = json.loads(pkgutil.get_data(__name__, "test_data/sar.schema.json").decode('utf-8'))
 view_definition = json.loads(pkgutil.get_data(__name__, "test_data/view.schema.json").decode('utf-8'))
+query_1_expected = pkgutil.get_data(__name__, "test_data/query_1.py").decode('utf-8')
+view_1_expected = pkgutil.get_data(__name__, "test_data/view.py.txt").decode('utf-8')
+sar_1_expected = pkgutil.get_data(__name__, "test_data/sar.py.txt").decode('utf-8')
+eo_1_expected = pkgutil.get_data(__name__, "test_data/eo.py.txt").decode('utf-8')
 
 
 class TestBuild(TestCase):
@@ -158,166 +162,37 @@ class SARObservationDirectionQuery(EnumQuery):
         self.assertEqual(expected, actual)
 
     def test_extension_eo_1(self):
-        expected = """class EOExtension(Extension):
-    \"\"\"
-    STAC EO Extension for STAC Items and STAC Collections.
-    \"\"\"
-    def __init__(self, query_block: QueryBlock):
-        super().__init__(query_block)
-        self.center_wavelength = NumberQuery.init_with_limits("eo:center_wavelength", query_block, min_value=None, max_value=None)
-        self.cloud_cover = NumberQuery.init_with_limits("eo:cloud_cover", query_block, min_value=0, max_value=100)
-        self.common_name = CommonNameQuery.init_enums("eo:common_name", query_block, [x.value for x in CommonName])
-        self.full_width_half_max = NumberQuery.init_with_limits("eo:full_width_half_max", query_block, min_value=None, max_value=None)
-        self.snow_cover = NumberQuery.init_with_limits("eo:snow_cover", query_block, min_value=0, max_value=100)
-        self.solar_illumination = NumberQuery.init_with_limits("eo:solar_illumination", query_block, min_value=0, max_value=None)
-
-
-class CommonName(Enum):
-    pan = "pan"
-    coastal = "coastal"
-    blue = "blue"
-    green = "green"
-    green05 = "green05"
-    yellow = "yellow"
-    red = "red"
-    rededge = "rededge"
-    rededge071 = "rededge071"
-    rededge075 = "rededge075"
-    rededge078 = "rededge078"
-    nir = "nir"
-    nir08 = "nir08"
-    nir09 = "nir09"
-    cirrus = "cirrus"
-    swir16 = "swir16"
-    swir22 = "swir22"
-    lwir = "lwir"
-    lwir11 = "lwir11"
-    lwir12 = "lwir12"
-
-
-class CommonNameQuery(EnumQuery):
-    @classmethod
-    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
-        o = CommonNameQuery(field_name, parent_obj)
-        o._enum_values = set(enum_fields)
-        return o
-
-    def equals(self, value: CommonName) -> QueryBlock:
-        self._check([value.value])
-        self._eq_value = value.value
-        return self._parent_obj
-
-    def in_set(self, values: list[CommonName]) -> QueryBlock:
-        extracted = [x.value for x in values]
-        self._check(extracted)
-        self._in_values = extracted
-        return self._parent_obj
-"""
-        expected_lines = expected.split("\n")
-        actual = build_extension(eo_definition)
+        expected_lines = eo_1_expected.split("\n")
+        actual = ExtensionBuilder(eo_definition).extension
         actual_lines = actual.split("\n")
         for a in zip(expected_lines, actual_lines):
             if a[0] != a[1]:
                 self.assertEqual(a[0], a[1])
-        self.assertEqual(expected, actual)
+        self.assertEqual(eo_1_expected, actual)
 
     def test_extension_sar_1(self):
-        expected = """class SARExtension(Extension):
-    \"\"\"
-    STAC SAR Extension to a STAC Item
-    \"\"\"
-    def __init__(self, query_block: QueryBlock):
-        super().__init__(query_block)
-        self.center_frequency = NumberQuery.init_with_limits("sar:center_frequency", query_block, min_value=None, max_value=None)
-        self.frequency_band = FrequencyBandQuery.init_enums("sar:frequency_band", query_block, [x.value for x in FrequencyBand])
-        self.instrument_mode = StringQuery("sar:instrument_mode", self)
-        self.looks_equivalent_number = NumberQuery.init_with_limits("sar:looks_equivalent_number", query_block, min_value=0, max_value=None)
-        self.observation_direction = ObservationDirectionQuery.init_enums("sar:observation_direction", query_block, [x.value for x in ObservationDirection])
-        self.pixel_spacing_azimuth = NumberQuery.init_with_limits("sar:pixel_spacing_azimuth", query_block, min_value=0, max_value=None)
-        self.pixel_spacing_range = NumberQuery.init_with_limits("sar:pixel_spacing_range", query_block, min_value=0, max_value=None)
-        self.product_type = StringQuery("sar:product_type", self)
-        self.resolution_azimuth = NumberQuery.init_with_limits("sar:resolution_azimuth", query_block, min_value=0, max_value=None)
-        self.resolution_range = NumberQuery.init_with_limits("sar:resolution_range", query_block, min_value=0, max_value=None)
-
-
-class FrequencyBand(Enum):
-    P = "P"
-    L = "L"
-    S = "S"
-    C = "C"
-    X = "X"
-    Ku = "Ku"
-    K = "K"
-    Ka = "Ka"
-
-
-class FrequencyBandQuery(EnumQuery):
-    @classmethod
-    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
-        o = FrequencyBandQuery(field_name, parent_obj)
-        o._enum_values = set(enum_fields)
-        return o
-
-    def equals(self, value: FrequencyBand) -> QueryBlock:
-        self._check([value.value])
-        self._eq_value = value.value
-        return self._parent_obj
-
-    def in_set(self, values: list[FrequencyBand]) -> QueryBlock:
-        extracted = [x.value for x in values]
-        self._check(extracted)
-        self._in_values = extracted
-        return self._parent_obj
-
-
-class ObservationDirection(Enum):
-    left = "left"
-    right = "right"
-
-
-class ObservationDirectionQuery(EnumQuery):
-    @classmethod
-    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
-        o = ObservationDirectionQuery(field_name, parent_obj)
-        o._enum_values = set(enum_fields)
-        return o
-
-    def equals(self, value: ObservationDirection) -> QueryBlock:
-        self._check([value.value])
-        self._eq_value = value.value
-        return self._parent_obj
-
-    def in_set(self, values: list[ObservationDirection]) -> QueryBlock:
-        extracted = [x.value for x in values]
-        self._check(extracted)
-        self._in_values = extracted
-        return self._parent_obj
-"""
-        expected_lines = expected.split("\n")
-        actual = build_extension(sar_definition)
+        expected_lines = sar_1_expected.split("\n")
+        actual = ExtensionBuilder(sar_definition).extension
         actual_lines = actual.split("\n")
         for a in zip(expected_lines, actual_lines):
             if a[0] != a[1]:
                 self.assertEqual(a[0], a[1])
-        self.assertEqual(expected, actual)
+        self.assertEqual(sar_1_expected, actual)
 
     def test_extension_view_1(self):
-        expected = """class ViewExtension(Extension):
-    \"\"\"
-    STAC View Geometry Extension for STAC Items and STAC Collections.
-    \"\"\"
-    def __init__(self, query_block: QueryBlock):
-        super().__init__(query_block)
-        self.azimuth = NumberQuery.init_with_limits("view:azimuth", query_block, min_value=0, max_value=360)
-        self.incidence_angle = NumberQuery.init_with_limits("view:incidence_angle", query_block, min_value=0, max_value=90)
-        self.off_nadir = NumberQuery.init_with_limits("view:off_nadir", query_block, min_value=0, max_value=90)
-        self.sun_azimuth = NumberQuery.init_with_limits("view:sun_azimuth", query_block, min_value=0, max_value=360)
-        self.sun_elevation = NumberQuery.init_with_limits("view:sun_elevation", query_block, min_value=-90, max_value=90)
-"""
-        expected_lines = expected.split("\n")
-        actual = build_extension(view_definition)
+        expected_lines = view_1_expected.split("\n")
+        actual = ExtensionBuilder(view_definition).extension
         actual_lines = actual.split("\n")
         for a in zip(expected_lines, actual_lines):
             if a[0] != a[1]:
                 self.assertEqual(a[0], a[1])
-        self.assertEqual(expected, actual)
+        self.assertEqual(view_1_expected, actual)
+
+    def test_query_py_1(self):
+        expected_lines = query_1_expected.split("\n")
+        actual = build_query_file([eo_definition, sar_definition])
+        actual_lines = actual.split("\n")
+        for a in zip(expected_lines, actual_lines):
+            if a[0] != a[1]:
+                self.assertEqual(a[0], a[1])
+        self.assertEqual(query_1_expected, actual)

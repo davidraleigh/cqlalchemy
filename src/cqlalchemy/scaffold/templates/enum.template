@@ -1,5 +1,5 @@
 class ${class_name}(Enum):
-${enum_key_values}
+${member_definitions}
 
 class ${class_name}Query(EnumQuery):
     @classmethod

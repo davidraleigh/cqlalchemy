@@ -4,4 +4,4 @@ class ${extension_name}Extension(Extension):
     """
     def __init__(self, query_block: QueryBlock):
         super().__init__(query_block)
-${field_instantiations}
+${attribute_instantiations}

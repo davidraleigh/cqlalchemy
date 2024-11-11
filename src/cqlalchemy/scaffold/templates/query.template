@@ -171,36 +171,6 @@ class EnumQuery(BaseString):
             raise ValueError("eq, in or like cannot already be set")
 
 
-class ObservationDirection(Enum):
-    left = "left"
-    right = "right"
-
-
-class ObservationDirectionQuery(EnumQuery):
-    @classmethod
-    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
-        o = ObservationDirectionQuery(field_name, parent_obj)
-        o._enum_values = set(enum_fields)
-        return o
-
-    def left(self) -> QueryBlock:
-        return self.equals(ObservationDirection.left)
-
-    def right(self) -> QueryBlock:
-        return self.equals(ObservationDirection.right)
-
-    def equals(self, value: ObservationDirection) -> QueryBlock:
-        self._check([value.value])
-        self._eq_value = value.value
-        return self._parent_obj
-
-    def in_set(self, values: list[ObservationDirection]) -> QueryBlock:
-        extracted = [x.value for x in values]
-        self._check(extracted)
-        self._in_values = extracted
-        return self._parent_obj
-
-
 class StringQuery(BaseString):
     def equals(self, value: str) -> QueryBlock:
         self._check(value)
@@ -401,36 +371,14 @@ class Extension:
         if len(args) == 0:
             return []
         return args
-
-
-class EOExtension(Extension):
-    def __init__(self, query_block: QueryBlock):
-        super().__init__(query_block)
-        self.cloud_cover = NumberQuery.init_with_limits("eo:cloud_cover", query_block, min_value=0, max_value=100)
-        self.snow_cover = NumberQuery.init_with_limits("eo:snow_cover", query_block, min_value=0, max_value=100)
-        self.center_wavelength = NumberQuery.init_with_limits("eo:center_wavelength", query_block, min_value=0)
-        self.full_width_half_max = NumberQuery.init_with_limits("eo:full_width_half_max", query_block, min_value=0)
-        self.solar_illumination = NumberQuery.init_with_limits("eo:solar_illumination", query_block, min_value=0)
-
-
-class SARExtension(Extension):
-    def __init__(self, query_block: QueryBlock):
-        super().__init__(query_block)
-        self.observation_direction = ObservationDirectionQuery.init_enums("sar:observation_direction", query_block, [x.value for x in ObservationDirection])
-
+${extension_definitions}
 
 class QueryBlock:
     def __init__(self):
         self._filter_expressions: list[QueryTuple] = []
         self.datetime = DateQuery("datetime", self)
-        self.updated = DateQuery("updated", self)
-        self.created = DateQuery("created", self)
         self.id = StringQuery("id", self)
-        self.platform = StringQuery("platform", self)
-        self.geometry = SpatialQuery("geometry", self)
-        self.gsd = NumberQuery.init_with_limits("gsd", self, min_value=0)
-        self.eo = EOExtension(self)
-        self.sar = SARExtension(self)
+        self.geometry = SpatialQuery("geometry", self)${common_attributes}${extension_attributes}
 
     def build_query(self, top_level_is_or=False):
         properties = list(vars(self).values())

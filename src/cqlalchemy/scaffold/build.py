@@ -3,12 +3,14 @@ from string import Template
 
 enum_template = Template(pkgutil.get_data(__name__, "templates/enum.template").decode('utf-8'))
 extension_template = Template(pkgutil.get_data(__name__, "templates/extension.template").decode('utf-8'))
-ENUM_KEY_VALUES = "    {x} = \"{x}\"\n"
+query_template = Template(pkgutil.get_data(__name__, "templates/query.template").decode('utf-8'))
+
+ENUM_MEMBERS = "    {x} = \"{x}\"\n"
 ENUM_QUERY_CLASS = "\n    def {x}(self) -> QueryBlock:\n        return self.equals({class_name}.{x})\n"
-NUMBER_QUERY_FIELD = "        self.{partial_name} = NumberQuery.init_with_limits(\"{field_name}\", query_block, " \
+NUMBER_QUERY_ATTRIBUTE = "        self.{partial_name} = NumberQuery.init_with_limits(\"{field_name}\", query_block, " \
                      "min_value={min_value}, max_value={max_value})\n"
-STRING_QUERY_FIELD = "        self.{partial_name} = StringQuery(\"{field_name}\", self)\n"
-ENUM_QUERY_FIELD = "        self.{partial_name} = {class_name}Query.init_enums(\"{field_name}\", query_block, " \
+STRING_QUERY_ATTRIBUTE = "        self.{partial_name} = StringQuery(\"{field_name}\", self)\n"
+ENUM_QUERY_ATTRIBUTE = "        self.{partial_name} = {class_name}Query.init_enums(\"{field_name}\", query_block, " \
                    "[x.value for x in {class_name}])\n"
 
 
@@ -20,55 +22,75 @@ def build_enum(field_name: str, enum_object: dict, full_name=False, add_unique=F
         field_name = field_name.split(":")[1]
     class_name = prefix + "".join([x.capitalize() for x in field_name.split("_")])
 
-    enum_key_values = ""
+    member_definitions = ""
     custom_methods = ""
     for x in enum_object["enum"]:
-        enum_key_values += ENUM_KEY_VALUES.format(x=x)
+        member_definitions += ENUM_MEMBERS.format(x=x)
         if add_unique:
             custom_methods += ENUM_QUERY_CLASS.format(x=x, class_name=class_name)
 
     return enum_template.substitute(class_name=class_name,
-                                    enum_key_values=enum_key_values,
+                                    member_definitions=member_definitions,
                                     custom_methods=custom_methods), class_name
 
 
-def build_extension(schema: dict, force_string_enum=False):
-    description = schema["description"]
-    definitions = schema["definitions"]
-    field_names = list(definitions["fields"]["properties"].keys())
-    field_names.sort()
-    jsond_prefix = field_names[0].split(":")[0]
-    extension_name = jsond_prefix.capitalize()
-    if extension_name not in description:
-        extension_name = extension_name.upper()
+class ExtensionBuilder:
+    def __init__(self, extension_schema, force_string_enum=False):
+        description = extension_schema["description"]
+        definitions = extension_schema["definitions"]
+        field_names = list(definitions["fields"]["properties"].keys())
+        field_names.sort()
+        self.jsond_prefix = field_names[0].split(":")[0]
+        extension_name = self.jsond_prefix.capitalize()
+        if extension_name not in description:
+            extension_name = extension_name.upper()
 
-    if "v1" in schema["$id"]:
-        definitions = definitions["fields"]["properties"]
+        if "v1" in extension_schema["$id"]:
+            definitions = definitions["fields"]["properties"]
 
-    enum_definitions = ""
-    field_instantiations = ""
-    for field_name in field_names:
-        partial_name = field_name.split(":")[1]
-        field_obj = definitions[field_name]
-        min_value = None
-        if "minimum" in field_obj:
-            min_value = field_obj["minimum"]
-        max_value = None
-        if "maximum" in field_obj:
-            max_value = field_obj["maximum"]
-        if field_obj["type"] == "number":
-            field_instantiations += NUMBER_QUERY_FIELD.format(field_name=field_name,
-                                                              partial_name=partial_name,
-                                                              min_value=min_value,
-                                                              max_value=max_value)
-        elif field_obj["type"] == "string" and "enum" in field_obj:
-            enum_definition, class_name = build_enum(field_name, field_obj)
-            enum_definitions += "\n\n"
-            enum_definitions += enum_definition
-            field_instantiations += ENUM_QUERY_FIELD.format(field_name=field_name, partial_name=partial_name, class_name=class_name)
-        elif field_obj["type"] == "string":
-            field_instantiations += STRING_QUERY_FIELD.format(field_name=field_name, partial_name=partial_name)
+        enum_definitions = ""
+        attribute_instantiations = ""
+        for field_name in field_names:
+            partial_name = field_name.split(":")[1]
+            field_obj = definitions[field_name]
+            min_value = None
+            if "minimum" in field_obj:
+                min_value = field_obj["minimum"]
+            max_value = None
+            if "maximum" in field_obj:
+                max_value = field_obj["maximum"]
+            if field_obj["type"] == "number":
+                attribute_instantiations += NUMBER_QUERY_ATTRIBUTE.format(field_name=field_name,
+                                                                          partial_name=partial_name,
+                                                                          min_value=min_value,
+                                                                          max_value=max_value)
+            elif field_obj["type"] == "string" and "enum" in field_obj and not force_string_enum:
+                enum_definition, class_name = build_enum(field_name, field_obj)
+                enum_definitions += enum_definition
+                enum_definitions += "\n\n"
+                attribute_instantiations += ENUM_QUERY_ATTRIBUTE.format(field_name=field_name,
+                                                                        partial_name=partial_name,
+                                                                        class_name=class_name)
+            elif field_obj["type"] == "string":
+                attribute_instantiations += STRING_QUERY_ATTRIBUTE.format(field_name=field_name,
+                                                                          partial_name=partial_name)
 
-    return extension_template.substitute(extension_name=extension_name,
-                                         description=description,
-                                         field_instantiations=field_instantiations) + enum_definitions
+        self.extension = enum_definitions + extension_template.substitute(extension_name=extension_name,
+                                                                          description=description,
+                                                                          attribute_instantiations=attribute_instantiations)
+        self.class_name = f"{extension_name}Extension"
+
+
+def build_query_file(extension_list: list[dict]):
+    extension_builders = []
+    for extension_schema in extension_list:
+        extension_builders.append(ExtensionBuilder(extension_schema))
+
+    extension_definitions = "\n\n"
+    extension_definitions += "\n\n".join([x.extension for x in extension_builders])
+    extension_attributes = "\n"
+    extension_attributes += "\n".join([f"        self.{x.jsond_prefix} = {x.class_name}(self)" for x in extension_builders])
+
+    return query_template.substitute(extension_definitions=extension_definitions,
+                                     common_attributes="",
+                                     extension_attributes=extension_attributes)
