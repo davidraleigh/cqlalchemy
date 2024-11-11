@@ -6,6 +6,7 @@ from cqlalchemy.scaffold.build import build_enum, build_extension
 
 eo_definition = json.loads(pkgutil.get_data(__name__, "test_data/eo.schema.json").decode('utf-8'))
 sar_definition = json.loads(pkgutil.get_data(__name__, "test_data/sar.schema.json").decode('utf-8'))
+view_definition = json.loads(pkgutil.get_data(__name__, "test_data/view.schema.json").decode('utf-8'))
 
 
 class TestBuild(TestCase):
@@ -49,7 +50,7 @@ class ObservationDirectionQuery(EnumQuery):
         return self.equals(ObservationDirection.right)
 """
         expected_lines = expected.split("\n")
-        actual = build_enum(input_key, input_obj, add_unique=True)
+        actual, _ = build_enum(input_key, input_obj, add_unique=True)
         actual_lines = actual.split("\n")
         for a in zip(expected_lines, actual_lines):
             if a[0] != a[1]:
@@ -102,7 +103,7 @@ class FrequencyBandQuery(EnumQuery):
         return self._parent_obj
 """
         expected_lines = expected.split("\n")
-        actual = build_enum(input_key, input_obj)
+        actual, _ = build_enum(input_key, input_obj)
         actual_lines = actual.split("\n")
         for a in zip(expected_lines, actual_lines):
             if a[0] != a[1]:
@@ -149,7 +150,7 @@ class SARObservationDirectionQuery(EnumQuery):
         return self.equals(SARObservationDirection.right)
 """
         expected_lines = expected.split("\n")
-        actual = build_enum(input_key, input_obj, full_name=True, add_unique=True)
+        actual, _ = build_enum(input_key, input_obj, full_name=True, add_unique=True)
         actual_lines = actual.split("\n")
         for a in zip(expected_lines, actual_lines):
             if a[0] != a[1]:
@@ -165,10 +166,52 @@ class SARObservationDirectionQuery(EnumQuery):
         super().__init__(query_block)
         self.center_wavelength = NumberQuery.init_with_limits("eo:center_wavelength", query_block, min_value=None, max_value=None)
         self.cloud_cover = NumberQuery.init_with_limits("eo:cloud_cover", query_block, min_value=0, max_value=100)
-        self.common_name = StringQuery("eo:common_name", self)
+        self.common_name = CommonNameQuery.init_enums("eo:common_name", query_block, [x.value for x in CommonName])
         self.full_width_half_max = NumberQuery.init_with_limits("eo:full_width_half_max", query_block, min_value=None, max_value=None)
         self.snow_cover = NumberQuery.init_with_limits("eo:snow_cover", query_block, min_value=0, max_value=100)
         self.solar_illumination = NumberQuery.init_with_limits("eo:solar_illumination", query_block, min_value=0, max_value=None)
+
+
+class CommonName(Enum):
+    pan = "pan"
+    coastal = "coastal"
+    blue = "blue"
+    green = "green"
+    green05 = "green05"
+    yellow = "yellow"
+    red = "red"
+    rededge = "rededge"
+    rededge071 = "rededge071"
+    rededge075 = "rededge075"
+    rededge078 = "rededge078"
+    nir = "nir"
+    nir08 = "nir08"
+    nir09 = "nir09"
+    cirrus = "cirrus"
+    swir16 = "swir16"
+    swir22 = "swir22"
+    lwir = "lwir"
+    lwir11 = "lwir11"
+    lwir12 = "lwir12"
+
+
+class CommonNameQuery(EnumQuery):
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
+        o = CommonNameQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: CommonName) -> QueryBlock:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[CommonName]) -> QueryBlock:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
 """
         expected_lines = expected.split("\n")
         actual = build_extension(eo_definition)
@@ -252,6 +295,27 @@ class ObservationDirectionQuery(EnumQuery):
 """
         expected_lines = expected.split("\n")
         actual = build_extension(sar_definition)
+        actual_lines = actual.split("\n")
+        for a in zip(expected_lines, actual_lines):
+            if a[0] != a[1]:
+                self.assertEqual(a[0], a[1])
+        self.assertEqual(expected, actual)
+
+    def test_extension_view_1(self):
+        expected = """class ViewExtension(Extension):
+    \"\"\"
+    STAC View Geometry Extension for STAC Items and STAC Collections.
+    \"\"\"
+    def __init__(self, query_block: QueryBlock):
+        super().__init__(query_block)
+        self.azimuth = NumberQuery.init_with_limits("view:azimuth", query_block, min_value=0, max_value=360)
+        self.incidence_angle = NumberQuery.init_with_limits("view:incidence_angle", query_block, min_value=0, max_value=90)
+        self.off_nadir = NumberQuery.init_with_limits("view:off_nadir", query_block, min_value=0, max_value=90)
+        self.sun_azimuth = NumberQuery.init_with_limits("view:sun_azimuth", query_block, min_value=0, max_value=360)
+        self.sun_elevation = NumberQuery.init_with_limits("view:sun_elevation", query_block, min_value=-90, max_value=90)
+"""
+        expected_lines = expected.split("\n")
+        actual = build_extension(view_definition)
         actual_lines = actual.split("\n")
         for a in zip(expected_lines, actual_lines):
             if a[0] != a[1]:
