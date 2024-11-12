@@ -51,7 +51,7 @@ class ExtensionBuilder:
     class_name = ""
     jsond_prefix = ""
 
-    def __init__(self, extension_schema, force_string_enum=False, fields_to_exclude=None):
+    def __init__(self, extension_schema, force_string_enum=False, fields_to_exclude=None, add_unique_enum=False):
         schema_url = extension_schema['$id']
         if fields_to_exclude is None:
             fields_to_exclude = []
@@ -196,7 +196,7 @@ class ExtensionBuilder:
                 attribute_instantiations += DATETIME_QUERY_EXT_ATTR.format(field_name=field_name,
                                                                            partial_name=partial_name)
             elif field_obj["type"] == "string" and "enum" in field_obj and not force_string_enum:
-                enum_definition, class_name = build_enum(field_name, field_obj)
+                enum_definition, class_name = build_enum(field_name, field_obj, add_unique=add_unique_enum)
                 enum_definitions += enum_definition
                 enum_definitions += "\n\n"
                 attribute_instantiations += ENUM_QUERY_ATTR.format(field_name=field_name,
@@ -222,11 +222,11 @@ class ExtensionBuilder:
         self.class_name = f"{extension_name}Extension"
 
 
-def build_query_file(extension_list: list[dict], fields_to_exclude=None):
+def build_query_file(extension_list: list[dict], fields_to_exclude=None, add_unique_enum=False):
     extension_definitions = ""
     extension_attributes = ""
     for extension_schema in extension_list:
-        extension_builder = ExtensionBuilder(extension_schema, fields_to_exclude=fields_to_exclude)
+        extension_builder = ExtensionBuilder(extension_schema, fields_to_exclude=fields_to_exclude, add_unique_enum=add_unique_enum)
         extension_definitions += f"\n\n{extension_builder.extension}"
         extension_attributes += EXTENSION_ATTR.format(jsond_prefix=extension_builder.jsond_prefix,
                                                       class_name=extension_builder.class_name)

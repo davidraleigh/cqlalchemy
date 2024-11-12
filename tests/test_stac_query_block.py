@@ -63,18 +63,18 @@ class STACTestCase(unittest.TestCase):
 
     def test_gsd(self):
         a = QueryBlock()
-        a.gsd.gte(0.25)
-        a.gsd.lte(0.75)
+        a.view.azimuth.gte(0.25)
+        a.view.azimuth.lte(0.75)
         a_dict = a.build_query()
 
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
         self.assertEqual(a_dict["filter"]["op"], "and")
         self.assertEqual(a_dict["filter"]["args"][0]["op"], "and")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["op"], ">=")
-        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][0]["property"], "gsd")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][0]["property"], "view:azimuth")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][1], 0.25)
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["op"], "<=")
-        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][0]["property"], "gsd")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][0]["property"], "view:azimuth")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1], 0.75)
 
     def test_spatial(self):
@@ -107,12 +107,12 @@ class STACTestCase(unittest.TestCase):
 
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
         self.assertEqual(a_dict["filter"]["op"], "or")
-        self.assertEqual(a_dict["filter"]["args"][0]["op"], ">=")
-        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "updated")
-        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], updated)
-        self.assertEqual(a_dict["filter"]["args"][1]["op"], "<=")
-        self.assertEqual(a_dict["filter"]["args"][1]["args"][0]["property"], "created")
-        self.assertEqual(a_dict["filter"]["args"][1]["args"][1], created)
+        self.assertEqual(a_dict["filter"]["args"][1]["op"], ">=")
+        self.assertEqual(a_dict["filter"]["args"][1]["args"][0]["property"], "updated")
+        self.assertEqual(a_dict["filter"]["args"][1]["args"][1], updated)
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "<=")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "created")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], created)
 
     def test_datetime_range_and(self):
         start = datetime.now(tz=timezone.utc)
@@ -149,7 +149,7 @@ class STACTestCase(unittest.TestCase):
     def test_extension_eo(self):
         a = QueryBlock()
         t = datetime.now(tz=timezone.utc)
-        a.datetime.lt(t).eo.cloud_cover.lt(45).created.gt(t)
+        a.datetime.lt(t).sar.resolution_azimuth.lt(45).created.gt(t)
         a_dict = a.build_query()
 
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
@@ -161,17 +161,17 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][1]["args"][0]["property"], "created")
         self.assertEqual(a_dict["filter"]["args"][1]["args"][1], t)
         self.assertEqual(a_dict["filter"]["args"][2]["op"], "<")
-        self.assertEqual(a_dict["filter"]["args"][2]["args"][0]["property"], "eo:cloud_cover")
+        self.assertEqual(a_dict["filter"]["args"][2]["args"][0]["property"], "sar:resolution_azimuth")
         self.assertEqual(a_dict["filter"]["args"][2]["args"][1], 45)
 
-        a.eo.cloud_cover.gt(10)
+        a.sar.resolution_azimuth.gt(10)
         a_dict = a.build_query()
         self.assertEqual(a_dict["filter"]["args"][2]["op"], "and")
         self.assertEqual(a_dict["filter"]["args"][2]["args"][0]["op"], ">")
-        self.assertEqual(a_dict["filter"]["args"][2]["args"][0]["args"][0]["property"], "eo:cloud_cover")
+        self.assertEqual(a_dict["filter"]["args"][2]["args"][0]["args"][0]["property"], "sar:resolution_azimuth")
         self.assertEqual(a_dict["filter"]["args"][2]["args"][0]["args"][1], 10)
         self.assertEqual(a_dict["filter"]["args"][2]["args"][1]["op"], "<")
-        self.assertEqual(a_dict["filter"]["args"][2]["args"][1]["args"][0]["property"], "eo:cloud_cover")
+        self.assertEqual(a_dict["filter"]["args"][2]["args"][1]["args"][0]["property"], "sar:resolution_azimuth")
         self.assertEqual(a_dict["filter"]["args"][2]["args"][1]["args"][1], 45)
 
     def test_extension_observation_sar(self):

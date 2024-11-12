@@ -232,7 +232,8 @@ class SARObservationDirectionQuery(EnumQuery):
                              ]
         actual = build_query_file(
             [sar_definition, view_definition, sat_definition],
-            fields_to_exclude=fields_to_exclude)
+            fields_to_exclude=fields_to_exclude,
+            add_unique_enum=True)
         actual_lines = actual.split("\n")
         for a in zip(expected_lines, actual_lines):
             if a[0] != a[1]:
