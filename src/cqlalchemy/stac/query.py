@@ -124,6 +124,22 @@ class QueryBase:
         pass
 
 
+class BooleanQuery(QueryBase):
+    _eq_value = None
+
+    def equals(self, value: str) -> QueryBlock:
+        self._eq_value = value
+        return self._parent_obj
+
+    def build_query(self):
+        if self._eq_value is not None:
+            return {
+                "op": "=",
+                "args": [self.property_obj, self._eq_value]
+            }
+        return None
+
+
 class BaseString(QueryBase):
     _eq_value = None
     _in_values = None

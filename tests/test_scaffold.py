@@ -2,6 +2,8 @@ import json
 import pkgutil
 from unittest import TestCase
 
+import requests
+
 from cqlalchemy.scaffold.build import ExtensionBuilder, build_enum, build_query_file
 
 eo_definition = json.loads(pkgutil.get_data(__name__, "test_data/eo.schema.json").decode('utf-8'))
@@ -15,6 +17,7 @@ eo_1_expected = pkgutil.get_data(__name__, "test_data/eo.py.txt").decode('utf-8'
 
 query_1_expected = pkgutil.get_data(__name__, "test_data/query_1.py").decode('utf-8')
 query_2_expected = pkgutil.get_data(__name__, "test_data/query_2.py").decode('utf-8')
+extension_list = pkgutil.get_data(__name__, "test_data/extension_list.txt").decode('utf-8')
 
 
 class TestBuild(TestCase):
@@ -234,3 +237,15 @@ class SARObservationDirectionQuery(EnumQuery):
             if a[0] != a[1]:
                 self.assertEqual(a[0], a[1])
         self.assertEqual(query_2_expected, actual)
+
+
+class TestExtensionList(TestCase):
+    def test_stac_extensions(self):
+        for ext_url in extension_list.split("\n"):
+            schema_request = requests.get(ext_url)
+            if schema_request.status_code != 200:
+                print(f"skipped {ext_url}")
+            try:
+                ExtensionBuilder(schema_request.json())
+            except BaseException as be:
+                assert False, f"{ext_url} and {be}"
