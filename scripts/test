@@ -2,4 +2,4 @@
 
 set -e
 
-poetry run pytest
+poetry run pytest -m "not integration"

@@ -2,6 +2,7 @@ import json
 import pkgutil
 from unittest import TestCase
 
+import pytest
 import requests
 
 from cqlalchemy.scaffold.build import ExtensionBuilder, build_enum, build_query_file
@@ -239,6 +240,7 @@ class SARObservationDirectionQuery(EnumQuery):
         self.assertEqual(query_2_expected, actual)
 
 
+@pytest.mark.integration
 class TestExtensionList(TestCase):
     def test_stac_extensions(self):
         for ext_url in extension_list.split("\n"):
