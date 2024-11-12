@@ -2,6 +2,8 @@ import logging
 import pkgutil
 from string import Template
 
+from cqlalchemy import __version__
+
 logger = logging.getLogger(__name__)
 
 enum_template = Template(pkgutil.get_data(__name__, "templates/enum.template").decode('utf-8'))
@@ -236,6 +238,7 @@ def build_query_file(extension_list: list[dict], fields_to_exclude=None, add_uni
     if fields_to_exclude is not None:
         common_props_lines = [line for line in common_props_lines if not any(field in line for field in fields_to_exclude)]
     common_props += "\n".join(common_props_lines)
-    return query_template.substitute(extension_definitions=extension_definitions,
+    return query_template.substitute(cqlalchemy_version=__version__,
+                                     extension_definitions=extension_definitions,
                                      common_attributes=common_props,
                                      extension_attributes=extension_attributes)

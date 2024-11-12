@@ -1,3 +1,5 @@
+# This file is generated with version 0.1.0 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
+
 from __future__ import annotations
 
 import math
@@ -589,8 +591,8 @@ class QueryBlock:
                 "op": top_level_op,
                 "args": args}}
 
-    def filter(self, *column_expresion):
-        query_tuple = column_expresion[0]
+    def filter(self, *column_expression):
+        query_tuple = column_expression[0]
         self._filter_expressions.append(query_tuple)
 
 

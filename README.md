@@ -4,24 +4,19 @@
 [![Built Status](https://api.cirrus-ci.com/github/<USER>/cqlalchemy.svg?branch=main)](https://cirrus-ci.com/github/<USER>/cqlalchemy)
 [![ReadTheDocs](https://readthedocs.org/projects/cqlalchemy/badge/?version=latest)](https://cqlalchemy.readthedocs.io/en/stable/)
 [![Coveralls](https://img.shields.io/coveralls/github/<USER>/cqlalchemy/main.svg)](https://coveralls.io/r/<USER>/cqlalchemy)
-[![PyPI-Server](https://img.shields.io/pypi/v/cqlalchemy.svg)](https://pypi.org/project/cqlalchemy/)
 [![Conda-Forge](https://img.shields.io/conda/vn/conda-forge/cqlalchemy.svg)](https://anaconda.org/conda-forge/cqlalchemy)
 [![Monthly Downloads](https://pepy.tech/badge/cqlalchemy/month)](https://pepy.tech/project/cqlalchemy)
 [![Twitter](https://img.shields.io/twitter/url/http/shields.io.svg?style=social&label=Twitter)](https://twitter.com/cqlalchemy)
 -->
 
-[![Project generated with PyScaffold](https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold)](https://pyscaffold.org/)
+[![PyPI-Server](https://img.shields.io/pypi/v/cqlalchemy.svg)](https://pypi.org/project/cqlalchemy/)
 
 # cqlalchemy
 
-> Add a short description here!
+> Library to help make CQL2-json queries a little easier!
 
-A longer description of your project goes here...
+STAC is a terrific specification for cataloging temporal/spatial data with an emphasis on providing queryable fields for searching that data. One of the ways to make complex queries is to use cql2-json. This query language can be a bit verbose and requires a good amount of memorization to make complex queries.
 
+This project provides to different functionalities. One is the `cqlalchemy.stac.query` module which provides query construction class (`QueryBlock`) with the most popular extensions (eo, sar, sat, view, mlm).
 
-<!-- pyscaffold-notes -->
-
-## Note
-
-This project has been set up using PyScaffold 4.6. For details and usage
-information on PyScaffold see https://pyscaffold.org/.
+The other functionality is a pyscaffold extension that allows the user to build their own `QueryBlock` class from extensions of their choosing, and allowing the opportunity to restrict the fields that can be queried (in the case where it isn't a required field and it's existence in the class might mislead the user).

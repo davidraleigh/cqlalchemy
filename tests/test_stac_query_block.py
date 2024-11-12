@@ -216,6 +216,8 @@ class STACTestCase(unittest.TestCase):
         b = NumberQuery.init_with_limits("field", QueryBlock())
         self.assertIsNotNone(b.equals(value=3.3))
 
+    # def test_
+
 
 if __name__ == '__main__':
     unittest.main()
