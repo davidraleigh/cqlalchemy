@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 @click.command()
-def collect_packages():
-    """Collect different kinds of packages interactively."""
+def build():
+    """Create a cqlalchemy QueryBlock class from STAC extensions."""
     extensions = []
     stac_fields_to_ignore = set()
 
@@ -61,8 +61,8 @@ def collect_packages():
         output_file_location = click.prompt('Define save location',
                                             default=default_file_location, type=pathlib.Path, show_default=True)
 
-    click.echo(f"Extensions: {extensions}")
-    click.echo(f"STAC fields: {stac_fields_to_ignore}")
+    click.echo(f"Extensions: {[x['title'] for x in extensions if 'title' in x]}")
+    click.echo(f"STAC fields to omit: {stac_fields_to_ignore}")
     query_file_data = build_query_file(extensions,
                                        fields_to_exclude=stac_fields_to_ignore,
                                        add_unique_enum=add_unique_enum)
@@ -71,4 +71,4 @@ def collect_packages():
 
 
 if __name__ == '__main__':
-    collect_packages()
+    build()

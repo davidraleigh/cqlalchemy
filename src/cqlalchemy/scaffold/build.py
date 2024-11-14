@@ -39,9 +39,10 @@ def build_enum(field_name: str, enum_object: dict, full_name=False, add_unique=F
     member_definitions = ""
     custom_methods = ""
     for x in enum_object["enum"]:
-        member_definitions += ENUM_MEMBERS.format(member=str(x).replace("-", "_"), value=x)
+        member = str(x).replace("-", "_").replace(" ", "_").strip()
+        member_definitions += ENUM_MEMBERS.format(member=member, value=x)
         if add_unique:
-            custom_methods += ENUM_QUERY_CLASS.format(x=x, class_name=class_name)
+            custom_methods += ENUM_QUERY_CLASS.format(x=member, class_name=class_name)
 
     return enum_template.substitute(class_name=class_name,
                                     member_definitions=member_definitions,

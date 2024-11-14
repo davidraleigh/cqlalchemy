@@ -31,7 +31,7 @@ class Framework(Enum):
     PyTorch = "PyTorch"
     TensorFlow = "TensorFlow"
     scikit_learn = "scikit-learn"
-    Hugging Face = "Hugging Face"
+    Hugging_Face = "Hugging Face"
     Keras = "Keras"
     ONNX = "ONNX"
     rgee = "rgee"

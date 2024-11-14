@@ -44,6 +44,9 @@ max-line-length = 120
 [tool.poetry.extras]
 scaffold = ["cqlalchemy.scaffold"]
 
+[tool.poetry.scripts]
+build = "cqlalchemy.scripts.generate:build"
+
 [tool.pyscaffold]
 extension = "cqlalchemy_ext"
 description = "parsing STAC extensions into a cqlalchemy query library"
