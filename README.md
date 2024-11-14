@@ -19,4 +19,4 @@ STAC is a terrific specification for cataloging temporal/spatial data with an em
 
 This project provides to different functionalities. One is the `cqlalchemy.stac.query` module which provides query construction class (`QueryBlock`) with the most popular extensions (eo, sar, sat, view, mlm).
 
-The other functionality is a pyscaffold extension that allows the user to build their own `QueryBlock` class from extensions of their choosing, and allowing the opportunity to restrict the fields that can be queried (in the case where it isn't a required field and it's existence in the class might mislead the user).
+The other functionality is a script that allows the user to build their own `QueryBlock` class from extensions of their choosing, and allowing the opportunity to restrict the fields that can be queried (in the case where it isn't a required field and it's existence in the class might mislead the user).
