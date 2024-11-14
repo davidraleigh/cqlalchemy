@@ -58,24 +58,24 @@ class _QueryTuple:
         return False
 
     @staticmethod
-    def _build_query(query_tuple: _QueryTuple, filter_query: dict):
+    def _recurse_build_query(query_tuple: _QueryTuple, filter_query: dict):
         if isinstance(query_tuple.left, _QueryBase):
             filter_query["args"].append({"op": query_tuple.op,
                                          "args": [query_tuple.left.property_obj, query_tuple.right]})
         elif isinstance(query_tuple.left, _FilterTuple):
-            filter_query["args"].append(query_tuple.left.build_query())
-            _QueryTuple._build_query(query_tuple.right, filter_query)
+            filter_query["args"].append(query_tuple.left._build_query())
+            _QueryTuple._recurse_build_query(query_tuple.right, filter_query)
         elif isinstance(query_tuple.right, _FilterTuple):
-            filter_query["args"].append(query_tuple.right.build_query())
-            _QueryTuple._build_query(query_tuple.left, filter_query)
+            filter_query["args"].append(query_tuple.right._build_query())
+            _QueryTuple._recurse_build_query(query_tuple.left, filter_query)
         else:
-            _QueryTuple._build_query(query_tuple.left, filter_query)
-            _QueryTuple._build_query(query_tuple.right, filter_query)
+            _QueryTuple._recurse_build_query(query_tuple.left, filter_query)
+            _QueryTuple._recurse_build_query(query_tuple.right, filter_query)
         return filter_query
 
-    def build_query(self):
+    def _build_query(self):
         filter_query = {"op": "and", "args": []}
-        filter_query = _QueryTuple._build_query(self, filter_query)
+        filter_query = _QueryTuple._recurse_build_query(self, filter_query)
         if self.op == "|":
             filter_query["op"] = "or"
         return filter_query
@@ -90,7 +90,7 @@ class _QueryBase:
         self._field_name = field_name
         self._parent_obj = parent_obj
 
-    def build_query(self):
+    def _build_query(self):
         pass
 
     def __eq__(self, other):
@@ -133,7 +133,7 @@ class _BooleanQuery(_QueryBase):
         self._eq_value = value
         return self._parent_obj
 
-    def build_query(self):
+    def _build_query(self):
         if self._eq_value is not None:
             return {
                 "op": "=",
@@ -147,7 +147,7 @@ class _BaseString(_QueryBase):
     _in_values = None
     _like_value = None
 
-    def build_query(self):
+    def _build_query(self):
         if self._eq_value is not None:
             return {
                 "op": "=",
@@ -218,7 +218,7 @@ class Query(_QueryBase):
     _lt_operand = None
     _eq_value = None
 
-    def build_query(self):
+    def _build_query(self):
         if self._eq_value is not None:
             return {
                 "op": "=",
@@ -361,7 +361,7 @@ class _SpatialQuery(_QueryBase):
         self._geometry = geometry
         return self._parent_obj
 
-    def build_query(self):
+    def _build_query(self):
         if self._geometry is None:
             return None
 
@@ -378,11 +378,11 @@ class _Extension:
     def __init__(self, query_block: QueryBuilder):
         self._filter_expressions: list[_QueryTuple] = []
 
-    def build_query(self):
+    def _build_query(self):
         properties = list(vars(self).values())
-        args = [x.build_query() for x in properties if isinstance(x, _QueryBase) and x.build_query() is not None]
+        args = [x._build_query() for x in properties if isinstance(x, _QueryBase) and x._build_query() is not None]
         for query_filter in self._filter_expressions:
-            args.append(query_filter.build_query())
+            args.append(query_filter._build_query())
 
         if len(args) == 0:
             return []
@@ -398,13 +398,13 @@ class QueryBuilder:
 
     def build_query(self, top_level_is_or=False):
         properties = list(vars(self).values())
-        args = [x.build_query() for x in properties if isinstance(x, _QueryBase) and x.build_query() is not None]
+        args = [x._build_query() for x in properties if isinstance(x, _QueryBase) and x._build_query() is not None]
         for query_filter in self._filter_expressions:
-            args.append(query_filter.build_query())
+            args.append(query_filter._build_query())
 
         for p in properties:
             if isinstance(p, _Extension):
-                args.extend(p.build_query())
+                args.extend(p._build_query())
 
         if len(args) == 0:
             return None
@@ -415,7 +415,8 @@ class QueryBuilder:
             "filter-lang": "cql2-json",
             "filter": {
                 "op": top_level_op,
-                "args": args}}
+                "args": args}
+        }
 
     def filter(self, *column_expression):
         query_tuple = column_expression[0]
