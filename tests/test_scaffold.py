@@ -11,10 +11,15 @@ eo_definition = json.loads(pkgutil.get_data(__name__, "test_data/eo.schema.json"
 sar_definition = json.loads(pkgutil.get_data(__name__, "test_data/sar.schema.json").decode('utf-8'))
 view_definition = json.loads(pkgutil.get_data(__name__, "test_data/view.schema.json").decode('utf-8'))
 sat_definition = json.loads(pkgutil.get_data(__name__, "test_data/sat.schema.json").decode('utf-8'))
+mlm_definition = json.loads(pkgutil.get_data(__name__, "test_data/mlm.schema.json").decode('utf-8'))
+landsat_definition = json.loads(pkgutil.get_data(__name__, "test_data/landsat.schema.json").decode('utf-8'))
+
+eo_1_expected = pkgutil.get_data(__name__, "test_data/eo.py.txt").decode('utf-8')
+sar_1_expected = pkgutil.get_data(__name__, "test_data/sar.py.txt").decode('utf-8')
 view_1_expected = pkgutil.get_data(__name__, "test_data/view.py.txt").decode('utf-8')
 sat_1_expected = pkgutil.get_data(__name__, "test_data/sat.py.txt").decode('utf-8')
-sar_1_expected = pkgutil.get_data(__name__, "test_data/sar.py.txt").decode('utf-8')
-eo_1_expected = pkgutil.get_data(__name__, "test_data/eo.py.txt").decode('utf-8')
+mlm_1_expected = pkgutil.get_data(__name__, "test_data/mlm.py.txt").decode('utf-8')
+landsat_1_expected = pkgutil.get_data(__name__, "test_data/landsat.py.txt").decode('utf-8')
 
 query_1_expected = pkgutil.get_data(__name__, "test_data/query_1.py").decode('utf-8')
 query_2_expected = pkgutil.get_data(__name__, "test_data/query_2.py").decode('utf-8')
@@ -204,6 +209,24 @@ class SARObservationDirectionQuery(EnumQuery):
             if a[0] != a[1]:
                 self.assertEqual(a[0], a[1])
         self.assertEqual(sat_1_expected, actual)
+
+    def test_extension_landsat_1(self):
+        expected_lines = landsat_1_expected.split("\n")
+        actual = ExtensionBuilder(landsat_definition).extension
+        actual_lines = actual.split("\n")
+        for a in zip(expected_lines, actual_lines):
+            if a[0] != a[1]:
+                self.assertEqual(a[0], a[1])
+        self.assertEqual(landsat_1_expected, actual)
+
+    def test_extension_mlm_1(self):
+        expected_lines = mlm_1_expected.split("\n")
+        actual = ExtensionBuilder(mlm_definition).extension
+        actual_lines = actual.split("\n")
+        for a in zip(expected_lines, actual_lines):
+            if a[0] != a[1]:
+                self.assertEqual(a[0], a[1])
+        self.assertEqual(mlm_1_expected, actual)
 
     def test_query_py_1(self):
         expected_lines = query_1_expected.split("\n")

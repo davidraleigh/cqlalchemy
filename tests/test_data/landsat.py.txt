@@ -1,0 +1,69 @@
+class CollectionCategory(Enum):
+    A1 = "A1"
+    A2 = "A2"
+    T1 = "T1"
+    T2 = "T2"
+    RT = "RT"
+
+
+class CollectionCategoryQuery(EnumQuery):
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
+        o = CollectionCategoryQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: CollectionCategory) -> QueryBlock:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[CollectionCategory]) -> QueryBlock:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+
+class Correction(Enum):
+    L1TP = "L1TP"
+    L1GT = "L1GT"
+    L1GS = "L1GS"
+    L2SR = "L2SR"
+    L2SP = "L2SP"
+
+
+class CorrectionQuery(EnumQuery):
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
+        o = CorrectionQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: Correction) -> QueryBlock:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[Correction]) -> QueryBlock:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+
+class LandsatExtension(Extension):
+    """
+    Landsat Extension to STAC Items and STAC Collections.
+    """
+    def __init__(self, query_block: QueryBlock):
+        super().__init__(query_block)
+        self.cloud_cover_land = NumberQuery.init_with_limits("landsat:cloud_cover_land", query_block, min_value=-1, max_value=100)
+        self.collection_category = CollectionCategoryQuery.init_enums("landsat:collection_category", query_block, [x.value for x in CollectionCategory])
+        self.collection_number = StringQuery("landsat:collection_number", query_block)
+        self.correction = CorrectionQuery.init_enums("landsat:correction", query_block, [x.value for x in Correction])
+        self.product_generated = DateQuery("field_name", query_block)
+        self.scene_id = StringQuery("landsat:scene_id", query_block)
+        self.wrs_path = StringQuery("landsat:wrs_path", query_block)
+        self.wrs_row = StringQuery("landsat:wrs_row", query_block)
+        self.wrs_type = StringQuery("landsat:wrs_type", query_block)

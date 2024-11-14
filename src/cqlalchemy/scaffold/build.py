@@ -11,7 +11,7 @@ extension_template = Template(pkgutil.get_data(__name__, "templates/extension.te
 query_template = Template(pkgutil.get_data(__name__, "templates/query.template").decode('utf-8'))
 common_template = Template(pkgutil.get_data(__name__, "templates/common.template").decode('utf-8'))
 
-ENUM_MEMBERS = "    {x} = \"{x}\"\n"
+ENUM_MEMBERS = "    {member} = \"{value}\"\n"
 ENUM_QUERY_CLASS = "\n    def {x}(self) -> QueryBlock:\n        return self.equals({class_name}.{x})\n"
 NUMBER_QUERY_ATTR = "        self.{partial_name} = NumberQuery.init_with_limits(\"{field_name}\", query_block, " \
                      "min_value={min_value}, max_value={max_value})\n"
@@ -39,7 +39,7 @@ def build_enum(field_name: str, enum_object: dict, full_name=False, add_unique=F
     member_definitions = ""
     custom_methods = ""
     for x in enum_object["enum"]:
-        member_definitions += ENUM_MEMBERS.format(x=x)
+        member_definitions += ENUM_MEMBERS.format(member=str(x).replace("-", "_"), value=x)
         if add_unique:
             custom_methods += ENUM_QUERY_CLASS.format(x=x, class_name=class_name)
 
@@ -197,7 +197,8 @@ class ExtensionBuilder:
             elif field_obj["type"] == "string" and "format" in field_obj and field_obj["format"] == "date-time":
                 attribute_instantiations += DATETIME_QUERY_EXT_ATTR.format(field_name=field_name,
                                                                            partial_name=partial_name)
-            elif field_obj["type"] == "string" and "enum" in field_obj and not force_string_enum:
+            elif field_obj["type"] == "string" and "enum" in field_obj and not force_string_enum and not any(s[0].isdigit() for s in field_obj["enum"]):
+                # landsat enum -> not any(s[0].isdigit() for s in field_obj["enum"])
                 enum_definition, class_name = build_enum(field_name, field_obj, add_unique=add_unique_enum)
                 enum_definitions += enum_definition
                 enum_definitions += "\n\n"
@@ -224,7 +225,7 @@ class ExtensionBuilder:
         self.class_name = f"{extension_name}Extension"
 
 
-def build_query_file(extension_list: list[dict], fields_to_exclude=None, add_unique_enum=False):
+def build_query_file(extension_list: list[dict], fields_to_exclude=None, add_unique_enum=False) -> str:
     extension_definitions = ""
     extension_attributes = ""
     for extension_schema in extension_list:
