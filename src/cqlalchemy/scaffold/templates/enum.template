@@ -1,4 +1,4 @@
-class ${class_name}(Enum):
+class ${class_name}(str, Enum):
 ${member_definitions}
 
 class _${class_name}Query(_EnumQuery):

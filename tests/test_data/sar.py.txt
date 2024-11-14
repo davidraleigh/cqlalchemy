@@ -1,4 +1,4 @@
-class FrequencyBand(Enum):
+class FrequencyBand(str, Enum):
     P = "P"
     L = "L"
     S = "S"
@@ -28,7 +28,7 @@ class _FrequencyBandQuery(_EnumQuery):
         return self._parent_obj
 
 
-class ObservationDirection(Enum):
+class ObservationDirection(str, Enum):
     left = "left"
     right = "right"
 

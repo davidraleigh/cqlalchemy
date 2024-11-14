@@ -389,7 +389,7 @@ class _Extension:
         return args
 
 
-class FrequencyBand(Enum):
+class FrequencyBand(str, Enum):
     P = "P"
     L = "L"
     S = "S"
@@ -443,7 +443,7 @@ class _FrequencyBandQuery(_EnumQuery):
         return self.equals(FrequencyBand.Ka)
 
 
-class ObservationDirection(Enum):
+class ObservationDirection(str, Enum):
     left = "left"
     right = "right"
 
@@ -500,7 +500,7 @@ class _ViewExtension(_Extension):
         self.incidence_angle = _NumberQuery.init_with_limits("view:incidence_angle", query_block, min_value=0, max_value=90)
 
 
-class OrbitState(Enum):
+class OrbitState(str, Enum):
     ascending = "ascending"
     descending = "descending"
     geostationary = "geostationary"

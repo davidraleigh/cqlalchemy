@@ -1,4 +1,4 @@
-class CommonName(Enum):
+class CommonName(str, Enum):
     pan = "pan"
     coastal = "coastal"
     blue = "blue"

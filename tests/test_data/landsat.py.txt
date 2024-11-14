@@ -1,4 +1,4 @@
-class CollectionCategory(Enum):
+class CollectionCategory(str, Enum):
     A1 = "A1"
     A2 = "A2"
     T1 = "T1"
@@ -25,7 +25,7 @@ class _CollectionCategoryQuery(_EnumQuery):
         return self._parent_obj
 
 
-class Correction(Enum):
+class Correction(str, Enum):
     L1TP = "L1TP"
     L1GT = "L1GT"
     L1GS = "L1GS"

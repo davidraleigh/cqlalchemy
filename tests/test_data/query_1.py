@@ -389,7 +389,7 @@ class _Extension:
         return args
 
 
-class CommonName(Enum):
+class CommonName(str, Enum):
     pan = "pan"
     coastal = "coastal"
     blue = "blue"
@@ -445,7 +445,7 @@ class _EOExtension(_Extension):
         self.solar_illumination = _NumberQuery.init_with_limits("eo:solar_illumination", query_block, min_value=0, max_value=None)
 
 
-class FrequencyBand(Enum):
+class FrequencyBand(str, Enum):
     P = "P"
     L = "L"
     S = "S"
@@ -475,7 +475,7 @@ class _FrequencyBandQuery(_EnumQuery):
         return self._parent_obj
 
 
-class ObservationDirection(Enum):
+class ObservationDirection(str, Enum):
     left = "left"
     right = "right"
 
@@ -532,7 +532,7 @@ class _ViewExtension(_Extension):
         self.sun_elevation = _NumberQuery.init_with_limits("view:sun_elevation", query_block, min_value=-90, max_value=90)
 
 
-class OrbitState(Enum):
+class OrbitState(str, Enum):
     ascending = "ascending"
     descending = "descending"
     geostationary = "geostationary"

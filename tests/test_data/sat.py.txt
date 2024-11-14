@@ -1,4 +1,4 @@
-class OrbitState(Enum):
+class OrbitState(str, Enum):
     ascending = "ascending"
     descending = "descending"
     geostationary = "geostationary"

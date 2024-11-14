@@ -37,7 +37,7 @@ class TestBuild(TestCase):
             "right"
           ]
         }
-        expected = """class ObservationDirection(Enum):
+        expected = """class ObservationDirection(str, Enum):
     left = "left"
     right = "right"
 
@@ -90,7 +90,7 @@ class _ObservationDirectionQuery(_EnumQuery):
             "Ka"
           ]
         }
-        expected = """class FrequencyBand(Enum):
+        expected = """class FrequencyBand(str, Enum):
     P = "P"
     L = "L"
     S = "S"
@@ -137,7 +137,7 @@ class _FrequencyBandQuery(_EnumQuery):
             "right"
           ]
         }
-        expected = """class SARObservationDirection(Enum):
+        expected = """class SARObservationDirection(str, Enum):
     left = "left"
     right = "right"
 

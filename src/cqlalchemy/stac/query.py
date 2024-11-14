@@ -389,7 +389,7 @@ class _Extension:
         return args
 
 
-class Accelerator(Enum):
+class Accelerator(str, Enum):
     amd64 = "amd64"
     cuda = "cuda"
     xla = "xla"
@@ -439,7 +439,7 @@ class _AcceleratorQuery(_EnumQuery):
         return self.equals(Accelerator.macos_arm)
 
 
-class Framework(Enum):
+class Framework(str, Enum):
     PyTorch = "PyTorch"
     TensorFlow = "TensorFlow"
     scikit_learn = "scikit-learn"
@@ -534,7 +534,7 @@ class _MLMExtension(_Extension):
         self.total_parameters = _NumberQuery.init_with_limits("mlm:total_parameters", query_block, min_value=0, max_value=None, is_int=True)
 
 
-class OrbitState(Enum):
+class OrbitState(str, Enum):
     ascending = "ascending"
     descending = "descending"
     geostationary = "geostationary"
@@ -582,7 +582,7 @@ class _SatExtension(_Extension):
         self.relative_orbit = _NumberQuery.init_with_limits("sat:relative_orbit", query_block, min_value=1, max_value=None, is_int=True)
 
 
-class FrequencyBand(Enum):
+class FrequencyBand(str, Enum):
     P = "P"
     L = "L"
     S = "S"
@@ -636,7 +636,7 @@ class _FrequencyBandQuery(_EnumQuery):
         return self.equals(FrequencyBand.Ka)
 
 
-class ObservationDirection(Enum):
+class ObservationDirection(str, Enum):
     left = "left"
     right = "right"
 
@@ -699,7 +699,7 @@ class _ViewExtension(_Extension):
         self.sun_elevation = _NumberQuery.init_with_limits("view:sun_elevation", query_block, min_value=-90, max_value=90)
 
 
-class CommonName(Enum):
+class CommonName(str, Enum):
     pan = "pan"
     coastal = "coastal"
     blue = "blue"
@@ -815,7 +815,7 @@ class _EOExtension(_Extension):
         self.solar_illumination = _NumberQuery.init_with_limits("eo:solar_illumination", query_block, min_value=0, max_value=None)
 
 
-class CollectionCategory(Enum):
+class CollectionCategory(str, Enum):
     A1 = "A1"
     A2 = "A2"
     T1 = "T1"
@@ -857,7 +857,7 @@ class _CollectionCategoryQuery(_EnumQuery):
         return self.equals(CollectionCategory.RT)
 
 
-class Correction(Enum):
+class Correction(str, Enum):
     L1TP = "L1TP"
     L1GT = "L1GT"
     L1GS = "L1GS"

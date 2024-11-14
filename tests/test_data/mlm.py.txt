@@ -1,4 +1,4 @@
-class Accelerator(Enum):
+class Accelerator(str, Enum):
     amd64 = "amd64"
     cuda = "cuda"
     xla = "xla"
@@ -27,7 +27,7 @@ class _AcceleratorQuery(_EnumQuery):
         return self._parent_obj
 
 
-class Framework(Enum):
+class Framework(str, Enum):
     PyTorch = "PyTorch"
     TensorFlow = "TensorFlow"
     scikit_learn = "scikit-learn"

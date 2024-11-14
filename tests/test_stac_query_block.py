@@ -1,3 +1,4 @@
+import json
 import unittest
 from datetime import datetime, timedelta, timezone
 
@@ -216,7 +217,29 @@ class STACTestCase(unittest.TestCase):
         b = _NumberQuery.init_with_limits("field", QueryBuilder())
         self.assertIsNotNone(b.equals(value=3.3))
 
-    # def test_
+    def test_filter_or(self):
+        # TODO document this user error
+        q2 = QueryBuilder()
+        bpassed = False
+        try:
+            q2.filter((q2.view.azimuth > 9) | (q2.sar.observation_direction.left()))
+        except AttributeError:
+            bpassed = True
+        assert bpassed
+
+    def test_filter_or_2(self):
+        q2 = QueryBuilder()
+        bpassed = True
+        try:
+            q2.filter((q2.view.azimuth > 9) | (q2.sar.observation_direction == ObservationDirection.left))
+        except AttributeError:
+            bpassed = False
+        assert bpassed
+
+    def test_filter_enum_serializable(self):
+        q2 = QueryBuilder()
+        q2.filter((q2.view.azimuth > 9) | (q2.sar.observation_direction == ObservationDirection.left))
+        json.dumps(q2.build_query())
 
 
 if __name__ == '__main__':
