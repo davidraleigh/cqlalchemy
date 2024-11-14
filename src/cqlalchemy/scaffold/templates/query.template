@@ -10,27 +10,27 @@ from json import JSONEncoder
 from shapely.geometry.base import BaseGeometry
 
 
-class DateTimeEncoder(JSONEncoder):
+class _DateTimeEncoder(JSONEncoder):
     def default(self, obj):
         if isinstance(obj, (date, datetime)):
             return obj.isoformat()
 
 
-class QueryTuple:
+class _QueryTuple:
     def __init__(self, left, op: str, right):
         self.left = left
         self.op = op
         self.right = right
 
     def __or__(self, other):
-        value = QueryTuple(self, "|", other)
+        value = _QueryTuple(self, "|", other)
         if value.check_parents(bad_op="&"):
             raise ValueError("can't mix '&' and '|' in `filter` function. must be all 'or', "
                              "or all 'and' (except inside of the 'filter_grouping' function)")
         return value
 
     def __and__(self, other):
-        value = QueryTuple(self, "&", other)
+        value = _QueryTuple(self, "&", other)
         if value.check_parents(bad_op="|"):
             raise ValueError("can't mix '&' and '|' in `filter` function. must be all 'or', "
                              "or all 'and' (except inside of the 'filter_grouping' function)")
@@ -40,11 +40,11 @@ class QueryTuple:
         if isinstance(self.left, _QueryBase):
             return False
 
-        if isinstance(self.left, FilterTuple):
+        if isinstance(self.left, _FilterTuple):
             if self.right.check_parents(bad_op):
                 return True
             return False
-        if isinstance(self.right, FilterTuple):
+        if isinstance(self.right, _FilterTuple):
             if self.left.check_parents(bad_op):
                 return True
             return False
@@ -58,30 +58,30 @@ class QueryTuple:
         return False
 
     @staticmethod
-    def _build_query(query_tuple: QueryTuple, filter_query: dict):
+    def _build_query(query_tuple: _QueryTuple, filter_query: dict):
         if isinstance(query_tuple.left, _QueryBase):
             filter_query["args"].append({"op": query_tuple.op,
                                          "args": [query_tuple.left.property_obj, query_tuple.right]})
-        elif isinstance(query_tuple.left, FilterTuple):
+        elif isinstance(query_tuple.left, _FilterTuple):
             filter_query["args"].append(query_tuple.left.build_query())
-            QueryTuple._build_query(query_tuple.right, filter_query)
-        elif isinstance(query_tuple.right, FilterTuple):
+            _QueryTuple._build_query(query_tuple.right, filter_query)
+        elif isinstance(query_tuple.right, _FilterTuple):
             filter_query["args"].append(query_tuple.right.build_query())
-            QueryTuple._build_query(query_tuple.left, filter_query)
+            _QueryTuple._build_query(query_tuple.left, filter_query)
         else:
-            QueryTuple._build_query(query_tuple.left, filter_query)
-            QueryTuple._build_query(query_tuple.right, filter_query)
+            _QueryTuple._build_query(query_tuple.left, filter_query)
+            _QueryTuple._build_query(query_tuple.right, filter_query)
         return filter_query
 
     def build_query(self):
         filter_query = {"op": "and", "args": []}
-        filter_query = QueryTuple._build_query(self, filter_query)
+        filter_query = _QueryTuple._build_query(self, filter_query)
         if self.op == "|":
             filter_query["op"] = "or"
         return filter_query
 
 
-class FilterTuple(QueryTuple):
+class _FilterTuple(_QueryTuple):
     pass
 
 
@@ -94,23 +94,23 @@ class _QueryBase:
         pass
 
     def __eq__(self, other):
-        return QueryTuple(self, "=", other)
+        return _QueryTuple(self, "=", other)
 
     def __gt__(self, other):
         self._greater_check(other)
-        return QueryTuple(self, ">", other)
+        return _QueryTuple(self, ">", other)
 
     def __ge__(self, other):
         self._greater_check(other)
-        return QueryTuple(self, ">=", other)
+        return _QueryTuple(self, ">=", other)
 
     def __lt__(self, other):
         self._less_check(other)
-        return QueryTuple(self, "<", other)
+        return _QueryTuple(self, "<", other)
 
     def __le__(self, other):
         self._less_check(other)
-        return QueryTuple(self, "<=", other)
+        return _QueryTuple(self, "<=", other)
 
     @property
     def property_obj(self):
@@ -376,7 +376,7 @@ class _SpatialQuery(_QueryBase):
 
 class _Extension:
     def __init__(self, query_block: QueryBuilder):
-        self._filter_expressions: list[QueryTuple] = []
+        self._filter_expressions: list[_QueryTuple] = []
 
     def build_query(self):
         properties = list(vars(self).values())
@@ -391,7 +391,7 @@ ${extension_definitions}
 
 class QueryBuilder:
     def __init__(self):
-        self._filter_expressions: list[QueryTuple] = []
+        self._filter_expressions: list[_QueryTuple] = []
         self.datetime = _DateQuery("datetime", self)
         self.id = _StringQuery("id", self)
         self.geometry = _SpatialQuery("geometry", self)${common_attributes}${extension_attributes}
@@ -423,5 +423,5 @@ class QueryBuilder:
 
 
 def filter_grouping(*column_expression):
-    filter_tuple = FilterTuple(column_expression[0].left, column_expression[0].op, column_expression[0].right)
+    filter_tuple = _FilterTuple(column_expression[0].left, column_expression[0].op, column_expression[0].right)
     return filter_tuple
