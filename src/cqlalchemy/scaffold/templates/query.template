@@ -287,18 +287,6 @@ class Query(_QueryBase):
         self._lt_operand = "<="
         return self._parent_obj
 
-    # def _greater_check(self, value):
-    #     if self._gt_operand is not None or self._eq_value is not None:
-    #         raise ValueError("cannot set equals after setting gt,gte,equals")
-    #
-    # def _less_check(self, value):
-    #     if self._lt_operand is not None or self._eq_value is not None:
-    #         raise ValueError("cannot set less after setting lt,lte,equals")
-    #
-    # def _equals_check(self):
-    #     if self._gt_value is not None or self._lt_value is not None or self._eq_value is not None:
-    #         raise ValueError("cannot set equals after setting lt,lte,gt,gte,equals")
-
 
 class _DateQuery(Query):
     def equals(self, value: date, tzinfo=timezone.utc) -> QueryBuilder:

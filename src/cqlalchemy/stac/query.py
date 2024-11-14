@@ -534,6 +534,54 @@ class _MLMExtension(_Extension):
         self.total_parameters = _NumberQuery.init_with_limits("mlm:total_parameters", query_block, min_value=0, max_value=None, is_int=True)
 
 
+class OrbitState(Enum):
+    ascending = "ascending"
+    descending = "descending"
+    geostationary = "geostationary"
+
+
+class _OrbitStateQuery(_EnumQuery):
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
+        o = _OrbitStateQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: OrbitState) -> QueryBuilder:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[OrbitState]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+    def ascending(self) -> QueryBuilder:
+        return self.equals(OrbitState.ascending)
+
+    def descending(self) -> QueryBuilder:
+        return self.equals(OrbitState.descending)
+
+    def geostationary(self) -> QueryBuilder:
+        return self.equals(OrbitState.geostationary)
+
+
+class _SatExtension(_Extension):
+    """
+    STAC Sat Extension to a STAC Item.
+    """
+    def __init__(self, query_block: QueryBuilder):
+        super().__init__(query_block)
+        self.absolute_orbit = _NumberQuery.init_with_limits("sat:absolute_orbit", query_block, min_value=1, max_value=None, is_int=True)
+        self.anx_datetime = _DateQuery("field_name", query_block)
+        self.orbit_cycle = _NumberQuery.init_with_limits("sat:orbit_cycle", query_block, min_value=1, max_value=None, is_int=True)
+        self.orbit_state = _OrbitStateQuery.init_enums("sat:orbit_state", query_block, [x.value for x in OrbitState])
+        self.platform_international_designator = _StringQuery("sat:platform_international_designator", query_block)
+        self.relative_orbit = _NumberQuery.init_with_limits("sat:relative_orbit", query_block, min_value=1, max_value=None, is_int=True)
+
+
 class FrequencyBand(Enum):
     P = "P"
     L = "L"
@@ -638,54 +686,6 @@ class _SARExtension(_Extension):
         self.resolution_range = _NumberQuery.init_with_limits("sar:resolution_range", query_block, min_value=0, max_value=None)
 
 
-class OrbitState(Enum):
-    ascending = "ascending"
-    descending = "descending"
-    geostationary = "geostationary"
-
-
-class _OrbitStateQuery(_EnumQuery):
-    @classmethod
-    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _OrbitStateQuery(field_name, parent_obj)
-        o._enum_values = set(enum_fields)
-        return o
-
-    def equals(self, value: OrbitState) -> QueryBuilder:
-        self._check([value.value])
-        self._eq_value = value.value
-        return self._parent_obj
-
-    def in_set(self, values: list[OrbitState]) -> QueryBuilder:
-        extracted = [x.value for x in values]
-        self._check(extracted)
-        self._in_values = extracted
-        return self._parent_obj
-
-    def ascending(self) -> QueryBuilder:
-        return self.equals(OrbitState.ascending)
-
-    def descending(self) -> QueryBuilder:
-        return self.equals(OrbitState.descending)
-
-    def geostationary(self) -> QueryBuilder:
-        return self.equals(OrbitState.geostationary)
-
-
-class _SatExtension(_Extension):
-    """
-    STAC Sat Extension to a STAC Item.
-    """
-    def __init__(self, query_block: QueryBuilder):
-        super().__init__(query_block)
-        self.absolute_orbit = _NumberQuery.init_with_limits("sat:absolute_orbit", query_block, min_value=1, max_value=None, is_int=True)
-        self.anx_datetime = _DateQuery("field_name", query_block)
-        self.orbit_cycle = _NumberQuery.init_with_limits("sat:orbit_cycle", query_block, min_value=1, max_value=None, is_int=True)
-        self.orbit_state = _OrbitStateQuery.init_enums("sat:orbit_state", query_block, [x.value for x in OrbitState])
-        self.platform_international_designator = _StringQuery("sat:platform_international_designator", query_block)
-        self.relative_orbit = _NumberQuery.init_with_limits("sat:relative_orbit", query_block, min_value=1, max_value=None, is_int=True)
-
-
 class _ViewExtension(_Extension):
     """
     STAC View Geometry Extension for STAC Items and STAC Collections.
@@ -697,17 +697,6 @@ class _ViewExtension(_Extension):
         self.off_nadir = _NumberQuery.init_with_limits("view:off_nadir", query_block, min_value=0, max_value=90)
         self.sun_azimuth = _NumberQuery.init_with_limits("view:sun_azimuth", query_block, min_value=0, max_value=360)
         self.sun_elevation = _NumberQuery.init_with_limits("view:sun_elevation", query_block, min_value=-90, max_value=90)
-
-
-class _ProjExtension(_Extension):
-    """
-    STAC Projection Extension for STAC Items.
-    """
-    def __init__(self, query_block: QueryBuilder):
-        super().__init__(query_block)
-        self.code = _StringQuery("proj:code", query_block)
-        self.geometry = _SpatialQuery("proj:geometry", query_block)
-        self.wkt2 = _StringQuery("proj:wkt2", query_block)
 
 
 class CommonName(Enum):
@@ -927,6 +916,17 @@ class _LandsatExtension(_Extension):
         self.wrs_type = _StringQuery("landsat:wrs_type", query_block)
 
 
+class _ProjExtension(_Extension):
+    """
+    STAC Projection Extension for STAC Items.
+    """
+    def __init__(self, query_block: QueryBuilder):
+        super().__init__(query_block)
+        self.code = _StringQuery("proj:code", query_block)
+        self.geometry = _SpatialQuery("proj:geometry", query_block)
+        self.wkt2 = _StringQuery("proj:wkt2", query_block)
+
+
 class QueryBuilder:
     def __init__(self):
         self._filter_expressions: list[QueryTuple] = []
@@ -942,12 +942,12 @@ class QueryBuilder:
         self.mission = _StringQuery("mission", self)
         self.gsd = _NumberQuery.init_with_limits("gsd", self, min_value=0)
         self.mlm = _MLMExtension(self)
-        self.sar = _SARExtension(self)
         self.sat = _SatExtension(self)
+        self.sar = _SARExtension(self)
         self.view = _ViewExtension(self)
-        self.proj = _ProjExtension(self)
         self.eo = _EOExtension(self)
         self.landsat = _LandsatExtension(self)
+        self.proj = _ProjExtension(self)
 
     def build_query(self, top_level_is_or=False):
         properties = list(vars(self).values())
