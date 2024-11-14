@@ -4,11 +4,11 @@ from datetime import date, datetime, timedelta
 from shapely import Point
 
 from cqlalchemy.stac import query as q
-from cqlalchemy.stac.query import DateTimeEncoder, QueryBlock, filter_grouping
+from cqlalchemy.stac.query import DateTimeEncoder, QueryBuilder, filter_grouping
 
 if __name__ == '__main__':
     import uuid
-    query = q.QueryBlock().datetime.equals(date.today()).\
+    query = q.QueryBuilder().datetime.equals(date.today()).\
         updated.lt(datetime.now()).\
         created.delta(date.today(), timedelta(45))
     query.sar.resolution_azimuth.lte(45)
@@ -24,5 +24,5 @@ if __name__ == '__main__':
                  filter_grouping((query.sar.resolution_azimuth >= 90.3) | (query.id == "pancakes.3")))
     print(json.dumps(query.build_query(), indent=4, cls=DateTimeEncoder))
 
-    print(QueryBlock().sar.resolution_azimuth.gt(99).sar.resolution_azimuth.lt(1).build_query())
-    print(QueryBlock().filter(query.sar.resolution_azimuth > 100))
+    print(QueryBuilder().sar.resolution_azimuth.gt(99).sar.resolution_azimuth.lt(1).build_query())
+    print(QueryBuilder().filter(query.sar.resolution_azimuth > 100))

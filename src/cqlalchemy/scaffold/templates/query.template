@@ -37,7 +37,7 @@ class QueryTuple:
         return value
 
     def check_parents(self, bad_op):
-        if isinstance(self.left, QueryBase):
+        if isinstance(self.left, _QueryBase):
             return False
 
         if isinstance(self.left, FilterTuple):
@@ -59,7 +59,7 @@ class QueryTuple:
 
     @staticmethod
     def _build_query(query_tuple: QueryTuple, filter_query: dict):
-        if isinstance(query_tuple.left, QueryBase):
+        if isinstance(query_tuple.left, _QueryBase):
             filter_query["args"].append({"op": query_tuple.op,
                                          "args": [query_tuple.left.property_obj, query_tuple.right]})
         elif isinstance(query_tuple.left, FilterTuple):
@@ -85,8 +85,8 @@ class FilterTuple(QueryTuple):
     pass
 
 
-class QueryBase:
-    def __init__(self, field_name, parent_obj: QueryBlock):
+class _QueryBase:
+    def __init__(self, field_name, parent_obj: QueryBuilder):
         self._field_name = field_name
         self._parent_obj = parent_obj
 
@@ -126,10 +126,10 @@ class QueryBase:
         pass
 
 
-class BooleanQuery(QueryBase):
+class _BooleanQuery(_QueryBase):
     _eq_value = None
 
-    def equals(self, value: str) -> QueryBlock:
+    def equals(self, value: str) -> QueryBuilder:
         self._eq_value = value
         return self._parent_obj
 
@@ -142,7 +142,7 @@ class BooleanQuery(QueryBase):
         return None
 
 
-class BaseString(QueryBase):
+class _BaseString(_QueryBase):
     _eq_value = None
     _in_values = None
     _like_value = None
@@ -172,12 +172,12 @@ class BaseString(QueryBase):
         return None
 
 
-class EnumQuery(BaseString):
+class _EnumQuery(_BaseString):
     _enum_values: set[str] = set()
 
     @classmethod
-    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
-        c = EnumQuery(field_name, parent_obj)
+    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
+        c = _EnumQuery(field_name, parent_obj)
         c._enum_values = set(enum_fields)
         if len(c._enum_values) <= 1:
             raise ValueError(f"enum_fields must have 2 or more unique values. fields are {enum_fields}")
@@ -190,18 +190,18 @@ class EnumQuery(BaseString):
             raise ValueError("eq, in or like cannot already be set")
 
 
-class StringQuery(BaseString):
-    def equals(self, value: str) -> QueryBlock:
+class _StringQuery(_BaseString):
+    def equals(self, value: str) -> QueryBuilder:
         self._check(value)
         self._eq_value = value
         return self._parent_obj
 
-    def in_set(self, values: list[str]) -> QueryBlock:
+    def in_set(self, values: list[str]) -> QueryBuilder:
         self._check(values)
         self._in_values = values
         return self._parent_obj
 
-    def like(self, value: str) -> QueryBlock:
+    def like(self, value: str) -> QueryBuilder:
         self._check(value)
         self._like_value = value
         return self._parent_obj
@@ -211,7 +211,7 @@ class StringQuery(BaseString):
             raise ValueError("eq, in or like cannot already be set")
 
 
-class Query(QueryBase):
+class Query(_QueryBase):
     _gt_value = None
     _gt_operand = None
     _lt_value = None
@@ -254,33 +254,33 @@ class Query(QueryBase):
                 ]
             }
 
-    def equals(self, value) -> QueryBlock:
+    def equals(self, value) -> QueryBuilder:
         self._check(value)
         self._eq_value = value
         return self._parent_obj
 
-    def gt(self, value) -> QueryBlock:
+    def gt(self, value) -> QueryBuilder:
         self._check(value)
         self._greater_check(value)
         self._gt_value = value
         self._gt_operand = ">"
         return self._parent_obj
 
-    def gte(self, value) -> QueryBlock:
+    def gte(self, value) -> QueryBuilder:
         self._check(value)
         self._greater_check(value)
         self._gt_value = value
         self._gt_operand = ">="
         return self._parent_obj
 
-    def lt(self, value) -> QueryBlock:
+    def lt(self, value) -> QueryBuilder:
         self._check(value)
         self._less_check(value)
         self._lt_value = value
         self._lt_operand = "<"
         return self._parent_obj
 
-    def lte(self, value) -> QueryBlock:
+    def lte(self, value) -> QueryBuilder:
         self._check(value)
         self._less_check(value)
         self._lt_value = value
@@ -300,8 +300,8 @@ class Query(QueryBase):
     #         raise ValueError("cannot set equals after setting lt,lte,gt,gte,equals")
 
 
-class DateQuery(Query):
-    def equals(self, value: date, tzinfo=timezone.utc) -> QueryBlock:
+class _DateQuery(Query):
+    def equals(self, value: date, tzinfo=timezone.utc) -> QueryBuilder:
         # self._equals_check()
         if isinstance(value, date):
             start = datetime.combine(value, datetime.min.time(), tzinfo=tzinfo)
@@ -329,7 +329,7 @@ class DateQuery(Query):
         return self._parent_obj
 
 
-class NumberQuery(Query):
+class _NumberQuery(Query):
     _min_value = None
     _max_value = None
     _is_int = False
@@ -338,19 +338,19 @@ class NumberQuery(Query):
         return super().equals(value)
 
     @classmethod
-    def init_with_limits(cls, field_name, parent_obj: QueryBlock, min_value=None, max_value=None, is_int=False):
-        c = NumberQuery(field_name, parent_obj)
+    def init_with_limits(cls, field_name, parent_obj: QueryBuilder, min_value=None, max_value=None, is_int=False):
+        c = _NumberQuery(field_name, parent_obj)
         c._min_value = min_value
         c._max_value = max_value
         c._is_int = is_int
         return c
 
     def _greater_check(self, value):
-        super(NumberQuery, self)._greater_check(value)
+        super(_NumberQuery, self)._greater_check(value)
         self._check_range(value)
 
     def _less_check(self, value):
-        super(NumberQuery, self)._less_check(value)
+        super(_NumberQuery, self)._less_check(value)
         self._check_range(value)
 
     def _check_range(self, value):
@@ -366,10 +366,10 @@ class NumberQuery(Query):
             raise ValueError(f"for integer type, must use ints. {value} is not an int")
 
 
-class SpatialQuery(QueryBase):
+class _SpatialQuery(_QueryBase):
     _geometry = None
 
-    def intersects(self, geometry: BaseGeometry) -> QueryBlock:
+    def intersects(self, geometry: BaseGeometry) -> QueryBuilder:
         self._geometry = geometry
         return self._parent_obj
 
@@ -386,13 +386,13 @@ class SpatialQuery(QueryBase):
         }
 
 
-class Extension:
-    def __init__(self, query_block: QueryBlock):
+class _Extension:
+    def __init__(self, query_block: QueryBuilder):
         self._filter_expressions: list[QueryTuple] = []
 
     def build_query(self):
         properties = list(vars(self).values())
-        args = [x.build_query() for x in properties if isinstance(x, QueryBase) and x.build_query() is not None]
+        args = [x.build_query() for x in properties if isinstance(x, _QueryBase) and x.build_query() is not None]
         for query_filter in self._filter_expressions:
             args.append(query_filter.build_query())
 
@@ -401,21 +401,21 @@ class Extension:
         return args
 ${extension_definitions}
 
-class QueryBlock:
+class QueryBuilder:
     def __init__(self):
         self._filter_expressions: list[QueryTuple] = []
-        self.datetime = DateQuery("datetime", self)
-        self.id = StringQuery("id", self)
-        self.geometry = SpatialQuery("geometry", self)${common_attributes}${extension_attributes}
+        self.datetime = _DateQuery("datetime", self)
+        self.id = _StringQuery("id", self)
+        self.geometry = _SpatialQuery("geometry", self)${common_attributes}${extension_attributes}
 
     def build_query(self, top_level_is_or=False):
         properties = list(vars(self).values())
-        args = [x.build_query() for x in properties if isinstance(x, QueryBase) and x.build_query() is not None]
+        args = [x.build_query() for x in properties if isinstance(x, _QueryBase) and x.build_query() is not None]
         for query_filter in self._filter_expressions:
             args.append(query_filter.build_query())
 
         for p in properties:
-            if isinstance(p, Extension):
+            if isinstance(p, _Extension):
                 args.extend(p.build_query())
 
         if len(args) == 0:

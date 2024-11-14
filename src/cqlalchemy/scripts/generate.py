@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 @click.command()
 def build():
-    """Create a cqlalchemy QueryBlock class from STAC extensions."""
+    """Create a cqlalchemy QueryBuilder class from STAC extensions."""
     extensions = []
     stac_fields_to_ignore = set()
 

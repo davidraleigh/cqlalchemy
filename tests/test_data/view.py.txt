@@ -1,11 +1,11 @@
-class ViewExtension(Extension):
+class _ViewExtension(_Extension):
     """
     STAC View Geometry Extension for STAC Items and STAC Collections.
     """
-    def __init__(self, query_block: QueryBlock):
+    def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
-        self.azimuth = NumberQuery.init_with_limits("view:azimuth", query_block, min_value=0, max_value=360)
-        self.incidence_angle = NumberQuery.init_with_limits("view:incidence_angle", query_block, min_value=0, max_value=90)
-        self.off_nadir = NumberQuery.init_with_limits("view:off_nadir", query_block, min_value=0, max_value=90)
-        self.sun_azimuth = NumberQuery.init_with_limits("view:sun_azimuth", query_block, min_value=0, max_value=360)
-        self.sun_elevation = NumberQuery.init_with_limits("view:sun_elevation", query_block, min_value=-90, max_value=90)
+        self.azimuth = _NumberQuery.init_with_limits("view:azimuth", query_block, min_value=0, max_value=360)
+        self.incidence_angle = _NumberQuery.init_with_limits("view:incidence_angle", query_block, min_value=0, max_value=90)
+        self.off_nadir = _NumberQuery.init_with_limits("view:off_nadir", query_block, min_value=0, max_value=90)
+        self.sun_azimuth = _NumberQuery.init_with_limits("view:sun_azimuth", query_block, min_value=0, max_value=360)
+        self.sun_elevation = _NumberQuery.init_with_limits("view:sun_elevation", query_block, min_value=-90, max_value=90)

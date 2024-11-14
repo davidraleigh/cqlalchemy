@@ -42,28 +42,28 @@ class TestBuild(TestCase):
     right = "right"
 
 
-class ObservationDirectionQuery(EnumQuery):
+class _ObservationDirectionQuery(_EnumQuery):
     @classmethod
-    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
-        o = ObservationDirectionQuery(field_name, parent_obj)
+    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
+        o = _ObservationDirectionQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: ObservationDirection) -> QueryBlock:
+    def equals(self, value: ObservationDirection) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[ObservationDirection]) -> QueryBlock:
+    def in_set(self, values: list[ObservationDirection]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
 
-    def left(self) -> QueryBlock:
+    def left(self) -> QueryBuilder:
         return self.equals(ObservationDirection.left)
 
-    def right(self) -> QueryBlock:
+    def right(self) -> QueryBuilder:
         return self.equals(ObservationDirection.right)
 """
         expected_lines = expected.split("\n")
@@ -101,19 +101,19 @@ class ObservationDirectionQuery(EnumQuery):
     Ka = "Ka"
 
 
-class FrequencyBandQuery(EnumQuery):
+class _FrequencyBandQuery(_EnumQuery):
     @classmethod
-    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
-        o = FrequencyBandQuery(field_name, parent_obj)
+    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
+        o = _FrequencyBandQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: FrequencyBand) -> QueryBlock:
+    def equals(self, value: FrequencyBand) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[FrequencyBand]) -> QueryBlock:
+    def in_set(self, values: list[FrequencyBand]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
@@ -142,28 +142,28 @@ class FrequencyBandQuery(EnumQuery):
     right = "right"
 
 
-class SARObservationDirectionQuery(EnumQuery):
+class _SARObservationDirectionQuery(_EnumQuery):
     @classmethod
-    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
-        o = SARObservationDirectionQuery(field_name, parent_obj)
+    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
+        o = _SARObservationDirectionQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: SARObservationDirection) -> QueryBlock:
+    def equals(self, value: SARObservationDirection) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[SARObservationDirection]) -> QueryBlock:
+    def in_set(self, values: list[SARObservationDirection]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
 
-    def left(self) -> QueryBlock:
+    def left(self) -> QueryBuilder:
         return self.equals(SARObservationDirection.left)
 
-    def right(self) -> QueryBlock:
+    def right(self) -> QueryBuilder:
         return self.equals(SARObservationDirection.right)
 """
         expected_lines = expected.split("\n")

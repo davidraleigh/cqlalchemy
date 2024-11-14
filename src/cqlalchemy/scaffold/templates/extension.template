@@ -1,7 +1,7 @@
-class ${extension_name}Extension(Extension):
+class ${class_name}(_Extension):
     """
     ${description}
     """
-    def __init__(self, query_block: QueryBlock):
+    def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
 ${attribute_instantiations}

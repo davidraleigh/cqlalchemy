@@ -1,19 +1,19 @@
 class ${class_name}(Enum):
 ${member_definitions}
 
-class ${class_name}Query(EnumQuery):
+class _${class_name}Query(_EnumQuery):
     @classmethod
-    def init_enums(cls, field_name, parent_obj: QueryBlock, enum_fields: list[str]):
-        o = ${class_name}Query(field_name, parent_obj)
+    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
+        o = _${class_name}Query(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: ${class_name}) -> QueryBlock:
+    def equals(self, value: ${class_name}) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[${class_name}]) -> QueryBlock:
+    def in_set(self, values: list[${class_name}]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted

@@ -12,18 +12,18 @@ query_template = Template(pkgutil.get_data(__name__, "templates/query.template")
 common_template = Template(pkgutil.get_data(__name__, "templates/common.template").decode('utf-8'))
 
 ENUM_MEMBERS = "    {member} = \"{value}\"\n"
-ENUM_QUERY_CLASS = "\n    def {x}(self) -> QueryBlock:\n        return self.equals({class_name}.{x})\n"
-NUMBER_QUERY_ATTR = "        self.{partial_name} = NumberQuery.init_with_limits(\"{field_name}\", query_block, " \
+ENUM_QUERY_CLASS = "\n    def {x}(self) -> QueryBuilder:\n        return self.equals({class_name}.{x})\n"
+NUMBER_QUERY_ATTR = "        self.{partial_name} = _NumberQuery.init_with_limits(\"{field_name}\", query_block, " \
                      "min_value={min_value}, max_value={max_value})\n"
-INTEGER_QUERY_ATTR = "        self.{partial_name} = NumberQuery.init_with_limits(\"{field_name}\", query_block, " \
+INTEGER_QUERY_ATTR = "        self.{partial_name} = _NumberQuery.init_with_limits(\"{field_name}\", query_block, " \
                      "min_value={min_value}, max_value={max_value}, is_int=True)\n"
-DATETIME_QUERY_EXT_ATTR = "        self.{partial_name} = DateQuery(\"field_name\", query_block)\n"
-BOOLEAN_QUERY_EXT_ATTR = "        self.{partial_name} = BooleanQuery(\"field_name\", query_block)\n"
-DATETIME_QUERY_ATTR = "        self.{partial_name} = DateQuery(\"field_name\", self)\n"
-STRING_QUERY_EXT_ATTR = "        self.{partial_name} = StringQuery(\"{field_name}\", query_block)\n"
-STRING_QUERY_ATTR = "        self.{partial_name} = StringQuery(\"{field_name}\", self)\n"
-GEOMETRY_QUERY_ATTR = "        self.{partial_name} = SpatialQuery(\"{field_name}\", query_block)\n"
-ENUM_QUERY_ATTR = "        self.{partial_name} = {class_name}Query.init_enums(\"{field_name}\", query_block, " \
+DATETIME_QUERY_EXT_ATTR = "        self.{partial_name} = _DateQuery(\"field_name\", query_block)\n"
+BOOLEAN_QUERY_EXT_ATTR = "        self.{partial_name} = _BooleanQuery(\"field_name\", query_block)\n"
+DATETIME_QUERY_ATTR = "        self.{partial_name} = _DateQuery(\"field_name\", self)\n"
+STRING_QUERY_EXT_ATTR = "        self.{partial_name} = _StringQuery(\"{field_name}\", query_block)\n"
+STRING_QUERY_ATTR = "        self.{partial_name} = _StringQuery(\"{field_name}\", self)\n"
+GEOMETRY_QUERY_ATTR = "        self.{partial_name} = _SpatialQuery(\"{field_name}\", query_block)\n"
+ENUM_QUERY_ATTR = "        self.{partial_name} = _{class_name}Query.init_enums(\"{field_name}\", query_block, " \
                    "[x.value for x in {class_name}])\n"
 EXTENSION_ATTR = "\n        self.{jsond_prefix} = {class_name}(self)"
 
@@ -133,6 +133,7 @@ class ExtensionBuilder:
         extension_name = self.jsond_prefix.capitalize()
         if extension_name not in description:
             extension_name = extension_name.upper()
+        self.class_name = f"_{extension_name}Extension"
 
         enum_definitions = ""
         attribute_instantiations = ""
@@ -220,10 +221,9 @@ class ExtensionBuilder:
             else:
                 raise ValueError(f"{field_obj['type']} not a processed type")
 
-        self.extension = enum_definitions + extension_template.substitute(extension_name=extension_name,
+        self.extension = enum_definitions + extension_template.substitute(class_name=self.class_name,
                                                                           description=description,
                                                                           attribute_instantiations=attribute_instantiations)
-        self.class_name = f"{extension_name}Extension"
 
 
 def build_query_file(extension_list: list[dict], fields_to_exclude=None, add_unique_enum=False) -> str:
