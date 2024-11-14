@@ -1,4 +1,4 @@
-# This file is generated with version 0.1.0 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
+# This file is generated with version 0.0.1 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
 
 from __future__ import annotations
 

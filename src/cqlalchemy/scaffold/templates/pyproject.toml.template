@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "${name}"
+version = "0.1.0"
+description = "${description}"
+authors = ["${author} <${email}>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+shapely = "^2.0.6"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+pyright = "^1.1.388"
+ruff = "^0.7.3"
+requests = "^2.32.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = ["tests"]
+namespaces = true
+
+[tool.pytest.ini_options]
+testpaths = "tests"
+markers = ["integration"]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown; charset=UTF-8; variant=GFM"
+
+[tool.flake8]
+max-line-length = 120
