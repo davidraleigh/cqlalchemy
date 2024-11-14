@@ -22,7 +22,7 @@ BOOLEAN_QUERY_EXT_ATTR = "        self.{partial_name} = BooleanQuery(\"field_nam
 DATETIME_QUERY_ATTR = "        self.{partial_name} = DateQuery(\"field_name\", self)\n"
 STRING_QUERY_EXT_ATTR = "        self.{partial_name} = StringQuery(\"{field_name}\", query_block)\n"
 STRING_QUERY_ATTR = "        self.{partial_name} = StringQuery(\"{field_name}\", self)\n"
-GEOMETRY_QUERY_ATTR = "        self.{partial_name} = SpatialQuery(\"{field_name}\", query_block)"
+GEOMETRY_QUERY_ATTR = "        self.{partial_name} = SpatialQuery(\"{field_name}\", query_block)\n"
 ENUM_QUERY_ATTR = "        self.{partial_name} = {class_name}Query.init_enums(\"{field_name}\", query_block, " \
                    "[x.value for x in {class_name}])\n"
 EXTENSION_ATTR = "\n        self.{jsond_prefix} = {class_name}(self)"
