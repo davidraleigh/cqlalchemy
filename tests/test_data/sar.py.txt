@@ -1,4 +1,8 @@
 class FrequencyBand(str, Enum):
+    """
+    Frequency Band Enum
+    """
+
     P = "P"
     L = "L"
     S = "S"
@@ -10,6 +14,11 @@ class FrequencyBand(str, Enum):
 
 
 class _FrequencyBandQuery(_EnumQuery):
+    """
+    Frequency Band Enum Query Interface
+    Frequency Band
+    """
+
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
         o = _FrequencyBandQuery(field_name, parent_obj)
@@ -29,11 +38,20 @@ class _FrequencyBandQuery(_EnumQuery):
 
 
 class ObservationDirection(str, Enum):
+    """
+    Observation Direction Enum
+    """
+
     left = "left"
     right = "right"
 
 
 class _ObservationDirectionQuery(_EnumQuery):
+    """
+    Observation Direction Enum Query Interface
+    Antenna pointing direction
+    """
+
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
         o = _ObservationDirectionQuery(field_name, parent_obj)
@@ -55,18 +73,47 @@ class _ObservationDirectionQuery(_EnumQuery):
 class _SARExtension(_Extension):
     """
     STAC SAR Extension to a STAC Item
+
+    ...
+
+    Attributes
+    ----------
+    center_frequency: _NumberQuery
+        number query interface for searching items by the sar:center_frequency field. Float input.
+    frequency_band : _FrequencyBandQuery
+        enum query interface for searching items by the sar:frequency_band field
+    instrument_mode : _StringQuery
+        string query interface for searching items by the sar:instrument_mode field
+    looks_azimuth: _NumberQuery
+        number query interface for searching items by the sar:looks_azimuth field where the minimum value is 0. Float input.. Integer input.
+    looks_equivalent_number: _NumberQuery
+        number query interface for searching items by the sar:looks_equivalent_number field where the minimum value is 0. Float input.
+    looks_range: _NumberQuery
+        number query interface for searching items by the sar:looks_range field where the minimum value is 0. Float input.. Integer input.
+    observation_direction : _ObservationDirectionQuery
+        enum query interface for searching items by the sar:observation_direction field
+    pixel_spacing_azimuth: _NumberQuery
+        number query interface for searching items by the sar:pixel_spacing_azimuth field where the minimum value is 0. Float input.
+    pixel_spacing_range: _NumberQuery
+        number query interface for searching items by the sar:pixel_spacing_range field where the minimum value is 0. Float input.
+    product_type : _StringQuery
+        string query interface for searching items by the sar:product_type field
+    resolution_azimuth: _NumberQuery
+        number query interface for searching items by the sar:resolution_azimuth field where the minimum value is 0. Float input.
+    resolution_range: _NumberQuery
+        number query interface for searching items by the sar:resolution_range field where the minimum value is 0. Float input.
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
-        self.center_frequency = _NumberQuery.init_with_limits("sar:center_frequency", query_block, min_value=None, max_value=None)
+        self.center_frequency = _NumberQuery.init_with_limits("sar:center_frequency", query_block, min_value=None, max_value=None, is_int=False)
         self.frequency_band = _FrequencyBandQuery.init_enums("sar:frequency_band", query_block, [x.value for x in FrequencyBand])
         self.instrument_mode = _StringQuery("sar:instrument_mode", query_block)
         self.looks_azimuth = _NumberQuery.init_with_limits("sar:looks_azimuth", query_block, min_value=0, max_value=None, is_int=True)
-        self.looks_equivalent_number = _NumberQuery.init_with_limits("sar:looks_equivalent_number", query_block, min_value=0, max_value=None)
+        self.looks_equivalent_number = _NumberQuery.init_with_limits("sar:looks_equivalent_number", query_block, min_value=0, max_value=None, is_int=False)
         self.looks_range = _NumberQuery.init_with_limits("sar:looks_range", query_block, min_value=0, max_value=None, is_int=True)
         self.observation_direction = _ObservationDirectionQuery.init_enums("sar:observation_direction", query_block, [x.value for x in ObservationDirection])
-        self.pixel_spacing_azimuth = _NumberQuery.init_with_limits("sar:pixel_spacing_azimuth", query_block, min_value=0, max_value=None)
-        self.pixel_spacing_range = _NumberQuery.init_with_limits("sar:pixel_spacing_range", query_block, min_value=0, max_value=None)
+        self.pixel_spacing_azimuth = _NumberQuery.init_with_limits("sar:pixel_spacing_azimuth", query_block, min_value=0, max_value=None, is_int=False)
+        self.pixel_spacing_range = _NumberQuery.init_with_limits("sar:pixel_spacing_range", query_block, min_value=0, max_value=None, is_int=False)
         self.product_type = _StringQuery("sar:product_type", query_block)
-        self.resolution_azimuth = _NumberQuery.init_with_limits("sar:resolution_azimuth", query_block, min_value=0, max_value=None)
-        self.resolution_range = _NumberQuery.init_with_limits("sar:resolution_range", query_block, min_value=0, max_value=None)
+        self.resolution_azimuth = _NumberQuery.init_with_limits("sar:resolution_azimuth", query_block, min_value=0, max_value=None, is_int=False)
+        self.resolution_range = _NumberQuery.init_with_limits("sar:resolution_range", query_block, min_value=0, max_value=None, is_int=False)

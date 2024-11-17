@@ -1,6 +1,12 @@
 class ${class_name}(_Extension):
     """
-    ${description}
+    ${extension_description}
+
+    ...
+
+    Attributes
+    ----------
+${extension_attr_docs}
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)

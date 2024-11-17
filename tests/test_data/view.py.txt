@@ -1,11 +1,26 @@
 class _ViewExtension(_Extension):
     """
     STAC View Geometry Extension for STAC Items and STAC Collections.
+
+    ...
+
+    Attributes
+    ----------
+    azimuth: _NumberQuery
+        number query interface for searching items by the view:azimuth field where the minimum value is 0 and the max value is 360. Float input.
+    incidence_angle: _NumberQuery
+        number query interface for searching items by the view:incidence_angle field where the minimum value is 0 and the max value is 90. Float input.
+    off_nadir: _NumberQuery
+        number query interface for searching items by the view:off_nadir field where the minimum value is 0 and the max value is 90. Float input.
+    sun_azimuth: _NumberQuery
+        number query interface for searching items by the view:sun_azimuth field where the minimum value is 0 and the max value is 360. Float input.
+    sun_elevation: _NumberQuery
+        number query interface for searching items by the view:sun_elevation field where the minimum value is -90 and the max value is 90. Float input.
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
-        self.azimuth = _NumberQuery.init_with_limits("view:azimuth", query_block, min_value=0, max_value=360)
-        self.incidence_angle = _NumberQuery.init_with_limits("view:incidence_angle", query_block, min_value=0, max_value=90)
-        self.off_nadir = _NumberQuery.init_with_limits("view:off_nadir", query_block, min_value=0, max_value=90)
-        self.sun_azimuth = _NumberQuery.init_with_limits("view:sun_azimuth", query_block, min_value=0, max_value=360)
-        self.sun_elevation = _NumberQuery.init_with_limits("view:sun_elevation", query_block, min_value=-90, max_value=90)
+        self.azimuth = _NumberQuery.init_with_limits("view:azimuth", query_block, min_value=0, max_value=360, is_int=False)
+        self.incidence_angle = _NumberQuery.init_with_limits("view:incidence_angle", query_block, min_value=0, max_value=90, is_int=False)
+        self.off_nadir = _NumberQuery.init_with_limits("view:off_nadir", query_block, min_value=0, max_value=90, is_int=False)
+        self.sun_azimuth = _NumberQuery.init_with_limits("view:sun_azimuth", query_block, min_value=0, max_value=360, is_int=False)
+        self.sun_elevation = _NumberQuery.init_with_limits("view:sun_elevation", query_block, min_value=-90, max_value=90, is_int=False)

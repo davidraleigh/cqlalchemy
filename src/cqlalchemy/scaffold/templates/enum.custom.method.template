@@ -1,0 +1,3 @@
+
+    def ${member}(self) -> QueryBuilder:
+        return self.equals(${class_name}.${member})

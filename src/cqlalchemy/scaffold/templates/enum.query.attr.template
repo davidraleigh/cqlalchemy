@@ -1,0 +1,1 @@
+        self.${partial_name} = _${class_name}Query.init_enums("${field_name}", query_block, [x.value for x in ${class_name}])

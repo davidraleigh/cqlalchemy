@@ -1,6 +1,6 @@
 import json
 import unittest
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from shapely import Point
 
@@ -12,7 +12,7 @@ class STACTestCase(unittest.TestCase):
         a = QueryBuilder()
         t = datetime.now(tz=timezone.utc)
         a.datetime.lt(t)
-        a_dict = a.build_query()
+        a_dict = a.query_dump()
 
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
         self.assertEqual(a_dict["filter"]["op"], "and")
@@ -24,7 +24,7 @@ class STACTestCase(unittest.TestCase):
         a = QueryBuilder()
         t = datetime.now(tz=timezone.utc)
         a.created.lte(t)
-        a_dict = a.build_query()
+        a_dict = a.query_dump()
 
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
         self.assertEqual(a_dict["filter"]["op"], "and")
@@ -36,7 +36,7 @@ class STACTestCase(unittest.TestCase):
         a = QueryBuilder()
         t = datetime.now(tz=timezone.utc)
         a.updated.gte(t)
-        a_dict = a.build_query()
+        a_dict = a.query_dump()
 
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
         self.assertEqual(a_dict["filter"]["op"], "and")
@@ -44,10 +44,63 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "updated")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1], t)
 
+    def test_equals_date(self):
+        a = QueryBuilder()
+        d = date(2024, 1, 1)
+        a.datetime.equals(d)
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["op"], ">=")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][0]["property"], "datetime")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][1].year, d.year)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][1].hour, 0)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][1].month, d.month)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][1].day, d.day)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][1].minute, 0)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][1].second, 0)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][1].tzinfo, timezone.utc)
+
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["op"], "<=")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][0]["property"], "datetime")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1].year, d.year)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1].hour, 23)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1].month, d.month)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1].day, d.day)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1].minute, 59)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1].second, 59)
+
+    def test_datetime_raises(self):
+        a = QueryBuilder()
+        d = datetime(2024, 1, 1, 0, 0, 0)
+        self.assertRaises(ValueError, a.datetime.equals, d)
+        self.assertRaises(ValueError, a.datetime.lt, d)
+        self.assertRaises(ValueError, a.datetime.gt, d)
+        self.assertRaises(ValueError, a.datetime.gte, d)
+        self.assertRaises(ValueError, a.datetime.lte, d)
+
+    def test_equals_datetime(self):
+        a = QueryBuilder()
+        d = datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+        a.datetime.equals(d)
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "=")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "datetime")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1].year, d.year)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1].hour, 0)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1].month, d.month)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1].day, d.day)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1].minute, 0)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1].second, 0)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1].tzinfo, timezone.utc)
+
     def test_platform(self):
         a = QueryBuilder()
         a.platform.equals("Landsat8")
-        a_dict = a.build_query()
+        a_dict = a.query_dump()
 
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
         self.assertEqual(a_dict["filter"]["op"], "and")
@@ -57,7 +110,7 @@ class STACTestCase(unittest.TestCase):
 
         a = QueryBuilder()
         a.platform.like("Landsat%")
-        a_dict = a.build_query()
+        a_dict = a.query_dump()
         self.assertEqual(a_dict["filter"]["args"][0]["op"], "like")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "platform")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1], "Landsat%")
@@ -66,7 +119,7 @@ class STACTestCase(unittest.TestCase):
         a = QueryBuilder()
         a.view.azimuth.gte(0.25)
         a.view.azimuth.lte(0.75)
-        a_dict = a.build_query()
+        a_dict = a.query_dump()
 
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
         self.assertEqual(a_dict["filter"]["op"], "and")
@@ -81,7 +134,7 @@ class STACTestCase(unittest.TestCase):
     def test_spatial(self):
         a = QueryBuilder()
         a.geometry.intersects(Point(4, 5))
-        a_dict = a.build_query()
+        a_dict = a.query_dump()
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
         self.assertEqual(a_dict["filter"]["op"], "and")
         self.assertEqual(a_dict["filter"]["args"][0]["op"], "s_intersects")
@@ -91,7 +144,7 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["coordinates"][1], 5)
 
         a.geometry.intersects(Point(4, 5).buffer(1))
-        a_dict = a.build_query()
+        a_dict = a.query_dump()
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
         self.assertEqual(a_dict["filter"]["op"], "and")
         self.assertEqual(a_dict["filter"]["args"][0]["op"], "s_intersects")
@@ -104,7 +157,7 @@ class STACTestCase(unittest.TestCase):
         created = datetime.now(tz=timezone.utc)
         a.updated.gte(updated)
         a.created.lte(created)
-        a_dict = a.build_query(top_level_is_or=True)
+        a_dict = a.query_dump(top_level_is_or=True)
 
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
         self.assertEqual(a_dict["filter"]["op"], "or")
@@ -120,7 +173,7 @@ class STACTestCase(unittest.TestCase):
         end = start + timedelta(days=1)
         a = QueryBuilder()
         a.datetime.gt(start).datetime.lt(end)
-        a_dict = a.build_query()
+        a_dict = a.query_dump()
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
         self.assertEqual(a_dict["filter"]["op"], "and")
         self.assertEqual(a_dict["filter"]["args"][0]["op"], "and")
@@ -136,7 +189,7 @@ class STACTestCase(unittest.TestCase):
         end = start + timedelta(days=1)
         a = QueryBuilder()
         a.datetime.gt(end).datetime.lt(start)
-        a_dict = a.build_query()
+        a_dict = a.query_dump()
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
         self.assertEqual(a_dict["filter"]["op"], "and")
         self.assertEqual(a_dict["filter"]["args"][0]["op"], "or")
@@ -151,7 +204,7 @@ class STACTestCase(unittest.TestCase):
         a = QueryBuilder()
         t = datetime.now(tz=timezone.utc)
         a.datetime.lt(t).sar.resolution_azimuth.lt(45).created.gt(t)
-        a_dict = a.build_query()
+        a_dict = a.query_dump()
 
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
         self.assertEqual(a_dict["filter"]["op"], "and")
@@ -166,7 +219,7 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][2]["args"][1], 45)
 
         a.sar.resolution_azimuth.gt(10)
-        a_dict = a.build_query()
+        a_dict = a.query_dump()
         self.assertEqual(a_dict["filter"]["args"][2]["op"], "and")
         self.assertEqual(a_dict["filter"]["args"][2]["args"][0]["op"], ">")
         self.assertEqual(a_dict["filter"]["args"][2]["args"][0]["args"][0]["property"], "sar:resolution_azimuth")
@@ -178,7 +231,7 @@ class STACTestCase(unittest.TestCase):
     def test_extension_observation_sar(self):
         a = QueryBuilder()
         a.sar.observation_direction.equals(ObservationDirection.left)
-        a_dict = a.build_query()
+        a_dict = a.query_dump()
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
         self.assertEqual(a_dict["filter"]["op"], "and")
         self.assertEqual(a_dict["filter"]["args"][0]["op"], "=")
@@ -188,7 +241,7 @@ class STACTestCase(unittest.TestCase):
     def test_extension_observation_sar_left(self):
         a = QueryBuilder()
         a.sar.observation_direction.left()
-        a_dict = a.build_query()
+        a_dict = a.query_dump()
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
         self.assertEqual(a_dict["filter"]["op"], "and")
         self.assertEqual(a_dict["filter"]["args"][0]["op"], "=")
@@ -198,7 +251,7 @@ class STACTestCase(unittest.TestCase):
     def test_extension_observation_sar_set(self):
         a = QueryBuilder()
         a.sar.observation_direction.in_set([ObservationDirection.left])
-        a_dict = a.build_query()
+        a_dict = a.query_dump()
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
         self.assertEqual(a_dict["filter"]["op"], "and")
         self.assertEqual(a_dict["filter"]["args"][0]["op"], "in")
@@ -206,7 +259,7 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1][0], "left")
         b = QueryBuilder()
         b.sar.observation_direction.in_set([ObservationDirection.left, ObservationDirection.right])
-        b_dict = b.build_query()
+        b_dict = b.query_dump()
         self.assertEqual(b_dict["filter"]["args"][0]["args"][1][0], "left")
         self.assertEqual(b_dict["filter"]["args"][0]["args"][1][1], "right")
 
@@ -239,7 +292,15 @@ class STACTestCase(unittest.TestCase):
     def test_filter_enum_serializable(self):
         q2 = QueryBuilder()
         q2.filter((q2.view.azimuth > 9) | (q2.sar.observation_direction == ObservationDirection.left))
-        json.dumps(q2.build_query())
+        json.dumps(q2.query_dump())
+
+    def test_boolean(self):
+        q = QueryBuilder()
+        q.mlm.accelerator_constrained.equals(True)
+        q_dict = q.query_dump()
+        self.assertEqual(q_dict["filter"]["args"][0]["op"], "=")
+        self.assertEqual(q_dict["filter"]["args"][0]["args"][0]["property"], "mlm:accelerator_constrained")
+        self.assertEqual(q_dict["filter"]["args"][0]["args"][1], True)
 
 
 if __name__ == '__main__':

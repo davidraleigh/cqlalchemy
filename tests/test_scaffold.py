@@ -38,11 +38,19 @@ class TestBuild(TestCase):
           ]
         }
         expected = """class ObservationDirection(str, Enum):
+    \"\"\"
+    Observation Direction Enum
+    \"\"\"
+
     left = "left"
     right = "right"
 
 
 class _ObservationDirectionQuery(_EnumQuery):
+    \"\"\"
+    Observation Direction Enum Query Interface
+    \"\"\"
+
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
         o = _ObservationDirectionQuery(field_name, parent_obj)
@@ -91,6 +99,10 @@ class _ObservationDirectionQuery(_EnumQuery):
           ]
         }
         expected = """class FrequencyBand(str, Enum):
+    \"\"\"
+    Frequency Band Enum
+    \"\"\"
+
     P = "P"
     L = "L"
     S = "S"
@@ -102,6 +114,10 @@ class _ObservationDirectionQuery(_EnumQuery):
 
 
 class _FrequencyBandQuery(_EnumQuery):
+    \"\"\"
+    Frequency Band Enum Query Interface
+    \"\"\"
+
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
         o = _FrequencyBandQuery(field_name, parent_obj)
@@ -138,11 +154,19 @@ class _FrequencyBandQuery(_EnumQuery):
           ]
         }
         expected = """class SARObservationDirection(str, Enum):
+    \"\"\"
+    Observation Direction Enum
+    \"\"\"
+
     left = "left"
     right = "right"
 
 
 class _SARObservationDirectionQuery(_EnumQuery):
+    \"\"\"
+    Observation Direction Enum Query Interface
+    \"\"\"
+
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
         o = _SARObservationDirectionQuery(field_name, parent_obj)

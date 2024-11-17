@@ -1,10 +1,19 @@
 class OrbitState(str, Enum):
+    """
+    Orbit State Enum
+    """
+
     ascending = "ascending"
     descending = "descending"
     geostationary = "geostationary"
 
 
 class _OrbitStateQuery(_EnumQuery):
+    """
+    Orbit State Enum Query Interface
+    Orbit State
+    """
+
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
         o = _OrbitStateQuery(field_name, parent_obj)
@@ -26,11 +35,26 @@ class _OrbitStateQuery(_EnumQuery):
 class _SatExtension(_Extension):
     """
     STAC Sat Extension to a STAC Item.
+
+    ...
+
+    Attributes
+    ----------
+    absolute_orbit: _NumberQuery
+        number query interface for searching items by the sat:absolute_orbit field where the minimum value is 1. Float input.. Integer input.
+    anx_datetime : _DateQuery
+        datetime query interface for searching items by the sat:anx_datetime field
+    orbit_state : _OrbitStateQuery
+        enum query interface for searching items by the sat:orbit_state field
+    platform_international_designator : _StringQuery
+        string query interface for searching items by the sat:platform_international_designator field
+    relative_orbit: _NumberQuery
+        number query interface for searching items by the sat:relative_orbit field where the minimum value is 1. Float input.. Integer input.
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
         self.absolute_orbit = _NumberQuery.init_with_limits("sat:absolute_orbit", query_block, min_value=1, max_value=None, is_int=True)
-        self.anx_datetime = _DateQuery("field_name", query_block)
+        self.anx_datetime = _DateQuery("sat:anx_datetime", query_block)
         self.orbit_state = _OrbitStateQuery.init_enums("sat:orbit_state", query_block, [x.value for x in OrbitState])
         self.platform_international_designator = _StringQuery("sat:platform_international_designator", query_block)
         self.relative_orbit = _NumberQuery.init_with_limits("sat:relative_orbit", query_block, min_value=1, max_value=None, is_int=True)

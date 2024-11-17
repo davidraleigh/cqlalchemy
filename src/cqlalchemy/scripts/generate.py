@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 @click.command()
 def build():
     """Create a cqlalchemy QueryBuilder class from STAC extensions."""
-    extensions = []
+    extensions = {}
     stac_fields_to_ignore = set()
 
     click.echo("Enter extensions, either the path to a local file, a url or the extension json-ld name (sar, sat, etc):")
@@ -24,14 +24,14 @@ def build():
         try:
             if pathlib.Path(extension).exists():
                 with pathlib.Path(extension).open() as fp:
-                    extensions.append(json.load(fp))
+                    extensions[extension] = json.load(fp)
             else:
                 if not extension.startswith("http"):
                     logger.warning(f"treating input {extension} like extension json-ld code")
                     extension = f"https://raw.githubusercontent.com/stac-extensions/{extension}/refs/heads/main/json-schema/schema.json"
                 response = requests.get(extension)
                 response.raise_for_status()
-                extensions.append(response.json())
+                extensions[extension] = response.json()
         except BaseException as be:
             click.echo(f"{extension} failed with {be}")
 
@@ -61,9 +61,12 @@ def build():
         output_file_location = click.prompt('Define save location',
                                             default=default_file_location, type=pathlib.Path, show_default=True)
 
-    click.echo(f"Extensions: {[x['title'] for x in extensions if 'title' in x]}")
+    # Step 3: Create an array using the sorted keys and their corresponding values
+    sorted_extensions = [extensions[key] for key in sorted(list(extensions.keys()))]
+
+    click.echo(f"Extensions: {[x['title'] for x in sorted_extensions if 'title' in x]}")
     click.echo(f"STAC fields to omit: {stac_fields_to_ignore}")
-    query_file_data = build_query_file(extensions,
+    query_file_data = build_query_file(sorted_extensions,
                                        fields_to_exclude=stac_fields_to_ignore,
                                        add_unique_enum=add_unique_enum)
     with pathlib.Path(output_file_location).open('wt') as f:

@@ -1,0 +1,1 @@
+        self.${partial_name} = _NumberQuery.init_with_limits("${field_name}", query_block, min_value=${min_value}, max_value=${max_value}, is_int=${is_int})
