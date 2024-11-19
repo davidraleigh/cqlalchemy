@@ -1,7 +1,7 @@
-class ${class_name}(str, Enum):
+class ${class_name}(str, Enum):${enum_description}
 ${member_definitions}
 
-class _${class_name}Query(_EnumQuery):
+class _${class_name}Query(_EnumQuery):${enum_query_description}
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
         o = _${class_name}Query(field_name, parent_obj)

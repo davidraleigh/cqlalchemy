@@ -1,4 +1,8 @@
 class CollectionCategory(str, Enum):
+    """
+    Collection Category Enum
+    """
+
     A1 = "A1"
     A2 = "A2"
     T1 = "T1"
@@ -7,6 +11,11 @@ class CollectionCategory(str, Enum):
 
 
 class _CollectionCategoryQuery(_EnumQuery):
+    """
+    Collection Category Enum Query Interface
+    Collection Category
+    """
+
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
         o = _CollectionCategoryQuery(field_name, parent_obj)
@@ -26,6 +35,10 @@ class _CollectionCategoryQuery(_EnumQuery):
 
 
 class Correction(str, Enum):
+    """
+    Correction Enum
+    """
+
     L1TP = "L1TP"
     L1GT = "L1GT"
     L1GS = "L1GS"
@@ -34,6 +47,11 @@ class Correction(str, Enum):
 
 
 class _CorrectionQuery(_EnumQuery):
+    """
+    Correction Enum Query Interface
+    Product Correction Level
+    """
+
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
         o = _CorrectionQuery(field_name, parent_obj)
@@ -55,14 +73,37 @@ class _CorrectionQuery(_EnumQuery):
 class _LandsatExtension(_Extension):
     """
     Landsat Extension to STAC Items and STAC Collections.
+
+    ...
+
+    Attributes
+    ----------
+    cloud_cover_land: _NumberQuery
+        number query interface for searching items by the landsat:cloud_cover_land field where the minimum value is -1 and the max value is 100. Float input.
+    collection_category : _CollectionCategoryQuery
+        enum query interface for searching items by the landsat:collection_category field
+    collection_number : _StringQuery
+        string query interface for searching items by the landsat:collection_number field
+    correction : _CorrectionQuery
+        enum query interface for searching items by the landsat:correction field
+    product_generated : _DateQuery
+        datetime query interface for searching items by the landsat:product_generated field
+    scene_id : _StringQuery
+        string query interface for searching items by the landsat:scene_id field
+    wrs_path : _StringQuery
+        string query interface for searching items by the landsat:wrs_path field
+    wrs_row : _StringQuery
+        string query interface for searching items by the landsat:wrs_row field
+    wrs_type : _StringQuery
+        string query interface for searching items by the landsat:wrs_type field
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
-        self.cloud_cover_land = _NumberQuery.init_with_limits("landsat:cloud_cover_land", query_block, min_value=-1, max_value=100)
+        self.cloud_cover_land = _NumberQuery.init_with_limits("landsat:cloud_cover_land", query_block, min_value=-1, max_value=100, is_int=False)
         self.collection_category = _CollectionCategoryQuery.init_enums("landsat:collection_category", query_block, [x.value for x in CollectionCategory])
         self.collection_number = _StringQuery("landsat:collection_number", query_block)
         self.correction = _CorrectionQuery.init_enums("landsat:correction", query_block, [x.value for x in Correction])
-        self.product_generated = _DateQuery("field_name", query_block)
+        self.product_generated = _DateQuery("landsat:product_generated", query_block)
         self.scene_id = _StringQuery("landsat:scene_id", query_block)
         self.wrs_path = _StringQuery("landsat:wrs_path", query_block)
         self.wrs_row = _StringQuery("landsat:wrs_row", query_block)

@@ -10,25 +10,23 @@ enum_template = Template(pkgutil.get_data(__name__, "templates/enum.template").d
 extension_template = Template(pkgutil.get_data(__name__, "templates/extension.template").decode('utf-8'))
 query_template = Template(pkgutil.get_data(__name__, "templates/query.template").decode('utf-8'))
 common_template = Template(pkgutil.get_data(__name__, "templates/common.template").decode('utf-8'))
+common_docs_template = Template(pkgutil.get_data(__name__, "templates/common.docs.template").decode('utf-8'))
+enum_custom_method_template = Template(pkgutil.get_data(__name__, "templates/enum.custom.method.template").decode('utf-8'))
+number_query_attr_template = Template(pkgutil.get_data(__name__, "templates/number.query.attr.template").decode('utf-8'))
+enum_query_attr_template = Template(pkgutil.get_data(__name__, "templates/enum.query.attr.template").decode('utf-8'))
 
 ENUM_MEMBERS = "    {member} = \"{value}\"\n"
-ENUM_QUERY_CLASS = "\n    def {x}(self) -> QueryBuilder:\n        return self.equals({class_name}.{x})\n"
-NUMBER_QUERY_ATTR = "        self.{partial_name} = _NumberQuery.init_with_limits(\"{field_name}\", query_block, " \
-                     "min_value={min_value}, max_value={max_value})\n"
-INTEGER_QUERY_ATTR = "        self.{partial_name} = _NumberQuery.init_with_limits(\"{field_name}\", query_block, " \
-                     "min_value={min_value}, max_value={max_value}, is_int=True)\n"
-DATETIME_QUERY_EXT_ATTR = "        self.{partial_name} = _DateQuery(\"field_name\", query_block)\n"
-BOOLEAN_QUERY_EXT_ATTR = "        self.{partial_name} = _BooleanQuery(\"field_name\", query_block)\n"
-DATETIME_QUERY_ATTR = "        self.{partial_name} = _DateQuery(\"field_name\", self)\n"
+DATETIME_QUERY_EXT_ATTR = "        self.{partial_name} = _DateQuery(\"{field_name}\", query_block)\n"
+BOOLEAN_QUERY_EXT_ATTR = "        self.{partial_name} = _BooleanQuery(\"{field_name}\", query_block)\n"
+DATETIME_QUERY_ATTR = "        self.{partial_name} = _DateQuery(\"{field_name}\", self)\n"
 STRING_QUERY_EXT_ATTR = "        self.{partial_name} = _StringQuery(\"{field_name}\", query_block)\n"
 STRING_QUERY_ATTR = "        self.{partial_name} = _StringQuery(\"{field_name}\", self)\n"
 GEOMETRY_QUERY_ATTR = "        self.{partial_name} = _SpatialQuery(\"{field_name}\", query_block)\n"
-ENUM_QUERY_ATTR = "        self.{partial_name} = _{class_name}Query.init_enums(\"{field_name}\", query_block, " \
-                   "[x.value for x in {class_name}])\n"
 EXTENSION_ATTR = "\n        self.{jsond_prefix} = {class_name}(self)"
+ATTR_DOC = "    {partial_name} : {class_name}\n        datetime query interface for searching items by the end_datetime field"
 
 
-def build_enum(field_name: str, enum_object: dict, full_name=False, add_unique=False):
+def build_enum(field_name: str, enum_object: dict, full_name=False, add_unique=False, field_description=""):
     prefix = ""
     if full_name and ":" in field_name:
         prefix = field_name.split(":")[0].upper()
@@ -42,11 +40,47 @@ def build_enum(field_name: str, enum_object: dict, full_name=False, add_unique=F
         member = str(x).replace("-", "_").replace(" ", "_").strip()
         member_definitions += ENUM_MEMBERS.format(member=member, value=x)
         if add_unique:
-            custom_methods += ENUM_QUERY_CLASS.format(x=member, class_name=class_name)
+            custom_methods += enum_custom_method_template.substitute(member=member, class_name=class_name) + "\n"
+
+    field_description_name = " ".join([x.capitalize() for x in field_name.strip().split("_")])
+    enum_query_description = f"\n    \"\"\"\n    {field_description_name} Enum Query Interface\n    \"\"\"\n"
+    if field_description:
+        enum_query_description = f"\n    \"\"\"\n    {field_description_name} Enum Query Interface\n    {field_description}\n    \"\"\"\n"
+    enum_description = f"\n    \"\"\"\n    {field_description_name} Enum\n    \"\"\"\n"
 
     return enum_template.substitute(class_name=class_name,
                                     member_definitions=member_definitions,
-                                    custom_methods=custom_methods), class_name
+                                    custom_methods=custom_methods,
+                                    enum_query_description=enum_query_description,
+                                    enum_description=enum_description), class_name
+
+
+def other_attr_doc(partial_name, class_name, field_name):
+    data_type = "enum"
+    if class_name == "_DateQuery":
+        data_type = "datetime"
+    elif class_name == "_StringQuery":
+        data_type = "string"
+    elif class_name == "_SpatialQuery":
+        data_type = "geometry"
+
+    return f"    {partial_name} : {class_name}\n        {data_type} query interface for searching items by the {field_name} field\n"
+
+
+def number_attr_doc(partial_name, field_name, min_value=None, max_value=None, is_int=False, additional_info=""):
+    doc = f"    {partial_name}: _NumberQuery\n        number query interface for searching items by the {field_name} field"
+    if min_value is not None:
+        doc += f" where the minimum value is {min_value}"
+        if max_value is not None:
+            doc += f" and the max value is {max_value}"
+    elif max_value is not None:
+        doc += f" where the maximum value is {max_value}"
+    doc += ". Float input."
+    if is_int:
+        doc += ". Integer input."
+    if additional_info:
+        doc += additional_info
+    return doc + "\n"
 
 
 class ExtensionBuilder:
@@ -59,10 +93,10 @@ class ExtensionBuilder:
         if fields_to_exclude is None:
             fields_to_exclude = []
         if "description" in extension_schema:
-            description = extension_schema["description"]
+            extension_description = extension_schema["description"]
         elif "title" in extension_schema:
             # TODO 'https://stac-extensions.github.io/storage/v2.0.0/schema.json' is the only reason for this if statement
-            description = extension_schema["title"]
+            extension_description = extension_schema["title"]
         else:
             logger.error(f"schema contains no description or title {schema_url}")
             return
@@ -131,12 +165,13 @@ class ExtensionBuilder:
         field_names.sort()
         self.jsond_prefix = field_names[0].split(":")[0]
         extension_name = self.jsond_prefix.capitalize()
-        if extension_name not in description:
+        if extension_name not in extension_description:
             extension_name = extension_name.upper()
         self.class_name = f"_{extension_name}Extension"
 
         enum_definitions = ""
         attribute_instantiations = ""
+        extension_attr_docs = ""
         for field_name in field_names:
             if field_name in fields_to_exclude:
                 logger.info(f"skipping the field {field_name} as it is included in {fields_to_exclude}")
@@ -175,6 +210,13 @@ class ExtensionBuilder:
                     if "type" not in field_obj:
                         logger.warning(f"{field_obj} does not contain type. skipping")
                         continue
+            if "description" in field_obj:
+                field_description = field_obj["description"]
+            elif "title" in field_obj:
+                field_description = field_obj["title"]
+            else:
+                field_description = ""
+
             if isinstance(field_obj["type"], list):
                 if "null" in field_obj["type"]:
                     field_obj["type"].remove("null")
@@ -186,43 +228,59 @@ class ExtensionBuilder:
                 else:
                     logger.warning(f"array of {field_obj['type']} not supported as type")
                     continue
-            if field_obj["type"] == "number":
-                attribute_instantiations += NUMBER_QUERY_ATTR.format(field_name=field_name,
-                                                                     partial_name=partial_name,
-                                                                     min_value=min_value,
-                                                                     max_value=max_value)
-            elif field_obj["type"] == "integer":
-                attribute_instantiations += INTEGER_QUERY_ATTR.format(field_name=field_name,
-                                                                      partial_name=partial_name,
-                                                                      min_value=min_value,
-                                                                      max_value=max_value)
+            if field_obj["type"] == "number" or field_obj["type"] == "integer":
+                is_int = field_obj["type"] == "integer"
+                attribute_instantiations += number_query_attr_template.substitute(field_name=field_name,
+                                                                                  partial_name=partial_name,
+                                                                                  min_value=min_value,
+                                                                                  max_value=max_value,
+                                                                                  is_int=is_int)
+                extension_attr_docs += number_attr_doc(partial_name=partial_name,
+                                                       field_name=field_name,
+                                                       min_value=min_value,
+                                                       max_value=max_value,
+                                                       is_int=is_int)
             elif field_obj["type"] == "string" and "format" in field_obj and field_obj["format"] == "date-time":
                 attribute_instantiations += DATETIME_QUERY_EXT_ATTR.format(field_name=field_name,
                                                                            partial_name=partial_name)
+                extension_attr_docs += other_attr_doc(partial_name=partial_name, class_name="_DateQuery", field_name=field_name)
             elif field_obj["type"] == "string" and "enum" in field_obj and not force_string_enum and not any(s[0].isdigit() for s in field_obj["enum"]):
                 # landsat enum -> not any(s[0].isdigit() for s in field_obj["enum"])
-                enum_definition, class_name = build_enum(field_name, field_obj, add_unique=add_unique_enum)
+                enum_definition, class_name = build_enum(field_name, field_obj, add_unique=add_unique_enum, field_description=field_description)
                 enum_definitions += enum_definition
                 enum_definitions += "\n\n"
-                attribute_instantiations += ENUM_QUERY_ATTR.format(field_name=field_name,
-                                                                   partial_name=partial_name,
-                                                                   class_name=class_name)
+                attribute_instantiations += enum_query_attr_template.substitute(field_name=field_name,
+                                                                                partial_name=partial_name,
+                                                                                class_name=class_name)
+                e_class = f"_{class_name}Query"
+                extension_attr_docs += other_attr_doc(partial_name=partial_name, class_name=e_class, field_name=field_name)
             elif field_obj["type"] == "string":
                 attribute_instantiations += STRING_QUERY_EXT_ATTR.format(field_name=field_name,
                                                                          partial_name=partial_name)
+                extension_attr_docs += other_attr_doc(partial_name=partial_name,
+                                                      class_name="_StringQuery",
+                                                      field_name=field_name)
             elif field_obj["type"] == "boolean":
                 attribute_instantiations += BOOLEAN_QUERY_EXT_ATTR.format(field_name=field_name,
                                                                           partial_name=partial_name)
+                extension_attr_docs += other_attr_doc(partial_name=partial_name,
+                                                      class_name="_BooleanQuery",
+                                                      field_name=field_name)
             elif field_obj["type"] == "geometry":
                 attribute_instantiations += GEOMETRY_QUERY_ATTR.format(field_name=field_name,
                                                                        partial_name=partial_name)
+                extension_attr_docs += other_attr_doc(partial_name=partial_name,
+                                                      class_name="_SpatialQuery",
+                                                      field_name=field_name)
             elif field_obj["type"] in ["array", "object"]:
                 logger.info(f"not producing type {field_obj['type']}")
             else:
                 raise ValueError(f"{field_obj['type']} not a processed type")
 
+        extension_attr_docs = extension_attr_docs.rstrip()
         self.extension = enum_definitions + extension_template.substitute(class_name=self.class_name,
-                                                                          description=description,
+                                                                          extension_description=extension_description,
+                                                                          extension_attr_docs=extension_attr_docs,
                                                                           attribute_instantiations=attribute_instantiations)
 
 
@@ -236,11 +294,23 @@ def build_query_file(extension_list: list[dict], fields_to_exclude=None, add_uni
                                                       class_name=extension_builder.class_name)
 
     common_props_lines = common_template.substitute().split("\n")
+    common_docs_props_lines = common_docs_template.substitute().split("\n")
     common_props = "\n"
+    common_docs_props = "\n"
     if fields_to_exclude is not None:
         common_props_lines = [line for line in common_props_lines if not any(field in line for field in fields_to_exclude)]
+        for i in range(0, len(common_props_lines)):
+            line0 = common_docs_props_lines[i * 2]
+            line1 = common_docs_props_lines[i * 2 + 1]
+            if not any(field in line0 for field in fields_to_exclude):
+                common_docs_props += line0 + "\n"
+                common_docs_props += line1 + "\n"
+    else:
+        common_docs_props = "\n" + common_docs_template.substitute()
+
     common_props += "\n".join(common_props_lines)
     return query_template.substitute(cqlalchemy_version=__version__,
                                      extension_definitions=extension_definitions,
                                      common_attributes=common_props,
+                                     common_docs=common_docs_props.rstrip(),
                                      extension_attributes=extension_attributes)

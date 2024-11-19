@@ -1,7 +1,8 @@
-# This file is generated with version 0.0.1 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
+# This file is generated with version 0.0.5 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
 
 from __future__ import annotations
 
+import json
 import math
 from datetime import date, datetime, timedelta, timezone
 from enum import Enum
@@ -129,7 +130,16 @@ class _QueryBase:
 class _BooleanQuery(_QueryBase):
     _eq_value = None
 
-    def equals(self, value: str) -> QueryBuilder:
+    def equals(self, value: bool) -> QueryBuilder:
+        """
+        for the field, query for all items where it's boolean value equals this input
+
+        Args:
+            value (bool): equality check for the field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
         self._eq_value = value
         return self._parent_obj
 
@@ -192,16 +202,43 @@ class _EnumQuery(_BaseString):
 
 class _StringQuery(_BaseString):
     def equals(self, value: str) -> QueryBuilder:
+        """
+        for the field, query for all items where it's string value equals this input
+
+        Args:
+            value (str): equality check for the field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
         self._check(value)
         self._eq_value = value
         return self._parent_obj
 
     def in_set(self, values: list[str]) -> QueryBuilder:
+        """
+        for the values input, create an in_set query for this field
+
+        Args:
+            values (list[str]): for the values input, create an in_set query for this field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
         self._check(values)
         self._in_values = values
         return self._parent_obj
 
     def like(self, value: str) -> QueryBuilder:
+        """
+        for the value input, create an like query for this field. Requires using the '%' operator within the value string for wildcard checking
+
+        Args:
+            value (str): for the value input, create an like query for this field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
         self._check(value)
         self._like_value = value
         return self._parent_obj
@@ -211,7 +248,7 @@ class _StringQuery(_BaseString):
             raise ValueError("eq, in or like cannot already be set")
 
 
-class Query(_QueryBase):
+class _Query(_QueryBase):
     _gt_value = None
     _gt_operand = None
     _lt_value = None
@@ -255,11 +292,29 @@ class Query(_QueryBase):
             }
 
     def equals(self, value) -> QueryBuilder:
+        """
+        for the field, query for all items where it's value equals this input
+
+        Args:
+            value: equality check for the field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
         self._check(value)
         self._eq_value = value
         return self._parent_obj
 
     def gt(self, value) -> QueryBuilder:
+        """
+        for the field, query for all items where it's value is greater than this input
+
+        Args:
+            value: value for greater than check for the field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
         self._check(value)
         self._greater_check(value)
         self._gt_value = value
@@ -267,6 +322,15 @@ class Query(_QueryBase):
         return self._parent_obj
 
     def gte(self, value) -> QueryBuilder:
+        """
+        for the field, query for all items where it's value is greater than or equal to this input
+
+        Args:
+            value: value for greater than or equal to check for the field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
         self._check(value)
         self._greater_check(value)
         self._gt_value = value
@@ -274,6 +338,15 @@ class Query(_QueryBase):
         return self._parent_obj
 
     def lt(self, value) -> QueryBuilder:
+        """
+        for the field, query for all items where it's value is less than this input
+
+        Args:
+            value: value for less than check for the field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
         self._check(value)
         self._less_check(value)
         self._lt_value = value
@@ -281,6 +354,15 @@ class Query(_QueryBase):
         return self._parent_obj
 
     def lte(self, value) -> QueryBuilder:
+        """
+        for the field, query for all items where it's value is less than or equal to this input
+
+        Args:
+            value: value for less than or equal to check for the field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
         self._check(value)
         self._less_check(value)
         self._lt_value = value
@@ -288,10 +370,21 @@ class Query(_QueryBase):
         return self._parent_obj
 
 
-class _DateQuery(Query):
+class _DateQuery(_Query):
     def equals(self, value: date, tzinfo=timezone.utc) -> QueryBuilder:
-        # self._equals_check()
-        if isinstance(value, date):
+        """
+        for the field, query for all items where it's date equals this input
+
+        Args:
+            value: equality check for the field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
+        self._check(value)
+        if isinstance(value, datetime):
+            self._eq_value = value
+        elif isinstance(value, date):
             start = datetime.combine(value, datetime.min.time(), tzinfo=tzinfo)
             end = datetime.combine(value, datetime.max.time(), tzinfo=tzinfo)
             self._gt_value = start
@@ -299,7 +392,8 @@ class _DateQuery(Query):
             self._lt_value = end
             self._lt_operand = "<="
         else:
-            self._eq_value = date
+            self._eq_value = value
+
         return self._parent_obj
 
     def delta(self, value: date, td: timedelta, tzinfo=timezone.utc):
@@ -316,8 +410,13 @@ class _DateQuery(Query):
         self._lt_operand = "<="
         return self._parent_obj
 
+    def _check(self, value):
+        if isinstance(value, datetime):
+            if value.tzinfo is None:
+                raise ValueError(f"datetime {value} does not have timezone set.")
 
-class _NumberQuery(Query):
+
+class _NumberQuery(_Query):
     _min_value = None
     _max_value = None
     _is_int = False
@@ -390,6 +489,10 @@ class _Extension:
 
 
 class FrequencyBand(str, Enum):
+    """
+    Frequency Band Enum
+    """
+
     P = "P"
     L = "L"
     S = "S"
@@ -401,6 +504,11 @@ class FrequencyBand(str, Enum):
 
 
 class _FrequencyBandQuery(_EnumQuery):
+    """
+    Frequency Band Enum Query Interface
+    Frequency Band
+    """
+
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
         o = _FrequencyBandQuery(field_name, parent_obj)
@@ -444,11 +552,20 @@ class _FrequencyBandQuery(_EnumQuery):
 
 
 class ObservationDirection(str, Enum):
+    """
+    Observation Direction Enum
+    """
+
     left = "left"
     right = "right"
 
 
 class _ObservationDirectionQuery(_EnumQuery):
+    """
+    Observation Direction Enum Query Interface
+    Antenna pointing direction
+    """
+
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
         o = _ObservationDirectionQuery(field_name, parent_obj)
@@ -476,37 +593,78 @@ class _ObservationDirectionQuery(_EnumQuery):
 class _SARExtension(_Extension):
     """
     STAC SAR Extension to a STAC Item
+
+    ...
+
+    Attributes
+    ----------
+    center_frequency: _NumberQuery
+        number query interface for searching items by the sar:center_frequency field. Float input.
+    frequency_band : _FrequencyBandQuery
+        enum query interface for searching items by the sar:frequency_band field
+    instrument_mode : _StringQuery
+        string query interface for searching items by the sar:instrument_mode field
+    looks_azimuth: _NumberQuery
+        number query interface for searching items by the sar:looks_azimuth field where the minimum value is 0. Float input.. Integer input.
+    looks_range: _NumberQuery
+        number query interface for searching items by the sar:looks_range field where the minimum value is 0. Float input.. Integer input.
+    observation_direction : _ObservationDirectionQuery
+        enum query interface for searching items by the sar:observation_direction field
+    product_type : _StringQuery
+        string query interface for searching items by the sar:product_type field
+    resolution_azimuth: _NumberQuery
+        number query interface for searching items by the sar:resolution_azimuth field where the minimum value is 0. Float input.
+    resolution_range: _NumberQuery
+        number query interface for searching items by the sar:resolution_range field where the minimum value is 0. Float input.
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
-        self.center_frequency = _NumberQuery.init_with_limits("sar:center_frequency", query_block, min_value=None, max_value=None)
+        self.center_frequency = _NumberQuery.init_with_limits("sar:center_frequency", query_block, min_value=None, max_value=None, is_int=False)
         self.frequency_band = _FrequencyBandQuery.init_enums("sar:frequency_band", query_block, [x.value for x in FrequencyBand])
         self.instrument_mode = _StringQuery("sar:instrument_mode", query_block)
         self.looks_azimuth = _NumberQuery.init_with_limits("sar:looks_azimuth", query_block, min_value=0, max_value=None, is_int=True)
         self.looks_range = _NumberQuery.init_with_limits("sar:looks_range", query_block, min_value=0, max_value=None, is_int=True)
         self.observation_direction = _ObservationDirectionQuery.init_enums("sar:observation_direction", query_block, [x.value for x in ObservationDirection])
         self.product_type = _StringQuery("sar:product_type", query_block)
-        self.resolution_azimuth = _NumberQuery.init_with_limits("sar:resolution_azimuth", query_block, min_value=0, max_value=None)
-        self.resolution_range = _NumberQuery.init_with_limits("sar:resolution_range", query_block, min_value=0, max_value=None)
+        self.resolution_azimuth = _NumberQuery.init_with_limits("sar:resolution_azimuth", query_block, min_value=0, max_value=None, is_int=False)
+        self.resolution_range = _NumberQuery.init_with_limits("sar:resolution_range", query_block, min_value=0, max_value=None, is_int=False)
 
 
 class _ViewExtension(_Extension):
     """
     STAC View Geometry Extension for STAC Items and STAC Collections.
+
+    ...
+
+    Attributes
+    ----------
+    azimuth: _NumberQuery
+        number query interface for searching items by the view:azimuth field where the minimum value is 0 and the max value is 360. Float input.
+    incidence_angle: _NumberQuery
+        number query interface for searching items by the view:incidence_angle field where the minimum value is 0 and the max value is 90. Float input.
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
-        self.azimuth = _NumberQuery.init_with_limits("view:azimuth", query_block, min_value=0, max_value=360)
-        self.incidence_angle = _NumberQuery.init_with_limits("view:incidence_angle", query_block, min_value=0, max_value=90)
+        self.azimuth = _NumberQuery.init_with_limits("view:azimuth", query_block, min_value=0, max_value=360, is_int=False)
+        self.incidence_angle = _NumberQuery.init_with_limits("view:incidence_angle", query_block, min_value=0, max_value=90, is_int=False)
 
 
 class OrbitState(str, Enum):
+    """
+    Orbit State Enum
+    """
+
     ascending = "ascending"
     descending = "descending"
     geostationary = "geostationary"
 
 
 class _OrbitStateQuery(_EnumQuery):
+    """
+    Orbit State Enum Query Interface
+    Orbit State
+    """
+
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
         o = _OrbitStateQuery(field_name, parent_obj)
@@ -537,6 +695,13 @@ class _OrbitStateQuery(_EnumQuery):
 class _SatExtension(_Extension):
     """
     STAC Sat Extension to a STAC Item.
+
+    ...
+
+    Attributes
+    ----------
+    orbit_state : _OrbitStateQuery
+        enum query interface for searching items by the sat:orbit_state field
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
@@ -544,10 +709,35 @@ class _SatExtension(_Extension):
 
 
 class QueryBuilder:
+    """
+    class for building cql2-json queries
+
+    ...
+
+    Attributes
+    ----------
+    id : _StringQuery
+        string query interface for identifier is unique within a Collection
+    datetime : _DateQuery
+        datetime query interface for searching the datetime of assets
+    geometry : _SpatialQuery
+        spatial query interface
+    created : _DateQuery
+        datetime query interface for searching items by the created field
+    updated : _DateQuery
+        datetime query interface for searching items by the updated field
+    start_datetime : _DateQuery
+        datetime query interface for searching items by the start_datetime field
+    end_datetime : _DateQuery
+        datetime query interface for searching items by the end_datetime field
+    platform : _StringQuery
+        string query interface for searching items by the platform field
+    """
+
     def __init__(self):
         self._filter_expressions: list[_QueryTuple] = []
-        self.datetime = _DateQuery("datetime", self)
         self.id = _StringQuery("id", self)
+        self.datetime = _DateQuery("datetime", self)
         self.geometry = _SpatialQuery("geometry", self)
         self.created = _DateQuery("created", self)
         self.updated = _DateQuery("updated", self)
@@ -558,7 +748,7 @@ class QueryBuilder:
         self.view = _ViewExtension(self)
         self.sat = _SatExtension(self)
 
-    def build_query(self, top_level_is_or=False):
+    def query_dump(self, top_level_is_or=False):
         properties = list(vars(self).values())
         args = [x._build_query() for x in properties if isinstance(x, _QueryBase) and x._build_query() is not None]
         for query_filter in self._filter_expressions:
@@ -579,6 +769,12 @@ class QueryBuilder:
                 "op": top_level_op,
                 "args": args}
         }
+
+    def query_dump_json(self, top_level_is_or=False, indent=None, sort_keys=False):
+        return json.dumps(self.query_dump(top_level_is_or=top_level_is_or),
+                          indent=indent,
+                          sort_keys=sort_keys,
+                          cls=_DateTimeEncoder)
 
     def filter(self, *column_expression):
         query_tuple = column_expression[0]

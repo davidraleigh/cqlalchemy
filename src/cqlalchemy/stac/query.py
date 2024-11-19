@@ -1,7 +1,8 @@
-# This file is generated with version 0.0.1 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
+# This file is generated with version 0.0.5 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
 
 from __future__ import annotations
 
+import json
 import math
 from datetime import date, datetime, timedelta, timezone
 from enum import Enum
@@ -129,7 +130,16 @@ class _QueryBase:
 class _BooleanQuery(_QueryBase):
     _eq_value = None
 
-    def equals(self, value: str) -> QueryBuilder:
+    def equals(self, value: bool) -> QueryBuilder:
+        """
+        for the field, query for all items where it's boolean value equals this input
+
+        Args:
+            value (bool): equality check for the field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
         self._eq_value = value
         return self._parent_obj
 
@@ -192,16 +202,43 @@ class _EnumQuery(_BaseString):
 
 class _StringQuery(_BaseString):
     def equals(self, value: str) -> QueryBuilder:
+        """
+        for the field, query for all items where it's string value equals this input
+
+        Args:
+            value (str): equality check for the field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
         self._check(value)
         self._eq_value = value
         return self._parent_obj
 
     def in_set(self, values: list[str]) -> QueryBuilder:
+        """
+        for the values input, create an in_set query for this field
+
+        Args:
+            values (list[str]): for the values input, create an in_set query for this field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
         self._check(values)
         self._in_values = values
         return self._parent_obj
 
     def like(self, value: str) -> QueryBuilder:
+        """
+        for the value input, create an like query for this field. Requires using the '%' operator within the value string for wildcard checking
+
+        Args:
+            value (str): for the value input, create an like query for this field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
         self._check(value)
         self._like_value = value
         return self._parent_obj
@@ -211,7 +248,7 @@ class _StringQuery(_BaseString):
             raise ValueError("eq, in or like cannot already be set")
 
 
-class Query(_QueryBase):
+class _Query(_QueryBase):
     _gt_value = None
     _gt_operand = None
     _lt_value = None
@@ -255,11 +292,29 @@ class Query(_QueryBase):
             }
 
     def equals(self, value) -> QueryBuilder:
+        """
+        for the field, query for all items where it's value equals this input
+
+        Args:
+            value: equality check for the field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
         self._check(value)
         self._eq_value = value
         return self._parent_obj
 
     def gt(self, value) -> QueryBuilder:
+        """
+        for the field, query for all items where it's value is greater than this input
+
+        Args:
+            value: value for greater than check for the field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
         self._check(value)
         self._greater_check(value)
         self._gt_value = value
@@ -267,6 +322,15 @@ class Query(_QueryBase):
         return self._parent_obj
 
     def gte(self, value) -> QueryBuilder:
+        """
+        for the field, query for all items where it's value is greater than or equal to this input
+
+        Args:
+            value: value for greater than or equal to check for the field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
         self._check(value)
         self._greater_check(value)
         self._gt_value = value
@@ -274,6 +338,15 @@ class Query(_QueryBase):
         return self._parent_obj
 
     def lt(self, value) -> QueryBuilder:
+        """
+        for the field, query for all items where it's value is less than this input
+
+        Args:
+            value: value for less than check for the field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
         self._check(value)
         self._less_check(value)
         self._lt_value = value
@@ -281,6 +354,15 @@ class Query(_QueryBase):
         return self._parent_obj
 
     def lte(self, value) -> QueryBuilder:
+        """
+        for the field, query for all items where it's value is less than or equal to this input
+
+        Args:
+            value: value for less than or equal to check for the field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
         self._check(value)
         self._less_check(value)
         self._lt_value = value
@@ -288,10 +370,21 @@ class Query(_QueryBase):
         return self._parent_obj
 
 
-class _DateQuery(Query):
+class _DateQuery(_Query):
     def equals(self, value: date, tzinfo=timezone.utc) -> QueryBuilder:
-        # self._equals_check()
-        if isinstance(value, date):
+        """
+        for the field, query for all items where it's date equals this input
+
+        Args:
+            value: equality check for the field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
+        self._check(value)
+        if isinstance(value, datetime):
+            self._eq_value = value
+        elif isinstance(value, date):
             start = datetime.combine(value, datetime.min.time(), tzinfo=tzinfo)
             end = datetime.combine(value, datetime.max.time(), tzinfo=tzinfo)
             self._gt_value = start
@@ -299,7 +392,8 @@ class _DateQuery(Query):
             self._lt_value = end
             self._lt_operand = "<="
         else:
-            self._eq_value = date
+            self._eq_value = value
+
         return self._parent_obj
 
     def delta(self, value: date, td: timedelta, tzinfo=timezone.utc):
@@ -316,8 +410,13 @@ class _DateQuery(Query):
         self._lt_operand = "<="
         return self._parent_obj
 
+    def _check(self, value):
+        if isinstance(value, datetime):
+            if value.tzinfo is None:
+                raise ValueError(f"datetime {value} does not have timezone set.")
 
-class _NumberQuery(Query):
+
+class _NumberQuery(_Query):
     _min_value = None
     _max_value = None
     _is_int = False
@@ -389,317 +488,11 @@ class _Extension:
         return args
 
 
-class Accelerator(str, Enum):
-    amd64 = "amd64"
-    cuda = "cuda"
-    xla = "xla"
-    amd_rocm = "amd-rocm"
-    intel_ipex_cpu = "intel-ipex-cpu"
-    intel_ipex_gpu = "intel-ipex-gpu"
-    macos_arm = "macos-arm"
-
-
-class _AcceleratorQuery(_EnumQuery):
-    @classmethod
-    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _AcceleratorQuery(field_name, parent_obj)
-        o._enum_values = set(enum_fields)
-        return o
-
-    def equals(self, value: Accelerator) -> QueryBuilder:
-        self._check([value.value])
-        self._eq_value = value.value
-        return self._parent_obj
-
-    def in_set(self, values: list[Accelerator]) -> QueryBuilder:
-        extracted = [x.value for x in values]
-        self._check(extracted)
-        self._in_values = extracted
-        return self._parent_obj
-
-    def amd64(self) -> QueryBuilder:
-        return self.equals(Accelerator.amd64)
-
-    def cuda(self) -> QueryBuilder:
-        return self.equals(Accelerator.cuda)
-
-    def xla(self) -> QueryBuilder:
-        return self.equals(Accelerator.xla)
-
-    def amd_rocm(self) -> QueryBuilder:
-        return self.equals(Accelerator.amd_rocm)
-
-    def intel_ipex_cpu(self) -> QueryBuilder:
-        return self.equals(Accelerator.intel_ipex_cpu)
-
-    def intel_ipex_gpu(self) -> QueryBuilder:
-        return self.equals(Accelerator.intel_ipex_gpu)
-
-    def macos_arm(self) -> QueryBuilder:
-        return self.equals(Accelerator.macos_arm)
-
-
-class Framework(str, Enum):
-    PyTorch = "PyTorch"
-    TensorFlow = "TensorFlow"
-    scikit_learn = "scikit-learn"
-    Hugging_Face = "Hugging Face"
-    Keras = "Keras"
-    ONNX = "ONNX"
-    rgee = "rgee"
-    spatialRF = "spatialRF"
-    JAX = "JAX"
-    MXNet = "MXNet"
-    Caffe = "Caffe"
-    PyMC = "PyMC"
-    Weka = "Weka"
-
-
-class _FrameworkQuery(_EnumQuery):
-    @classmethod
-    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _FrameworkQuery(field_name, parent_obj)
-        o._enum_values = set(enum_fields)
-        return o
-
-    def equals(self, value: Framework) -> QueryBuilder:
-        self._check([value.value])
-        self._eq_value = value.value
-        return self._parent_obj
-
-    def in_set(self, values: list[Framework]) -> QueryBuilder:
-        extracted = [x.value for x in values]
-        self._check(extracted)
-        self._in_values = extracted
-        return self._parent_obj
-
-    def PyTorch(self) -> QueryBuilder:
-        return self.equals(Framework.PyTorch)
-
-    def TensorFlow(self) -> QueryBuilder:
-        return self.equals(Framework.TensorFlow)
-
-    def scikit_learn(self) -> QueryBuilder:
-        return self.equals(Framework.scikit_learn)
-
-    def Hugging_Face(self) -> QueryBuilder:
-        return self.equals(Framework.Hugging_Face)
-
-    def Keras(self) -> QueryBuilder:
-        return self.equals(Framework.Keras)
-
-    def ONNX(self) -> QueryBuilder:
-        return self.equals(Framework.ONNX)
-
-    def rgee(self) -> QueryBuilder:
-        return self.equals(Framework.rgee)
-
-    def spatialRF(self) -> QueryBuilder:
-        return self.equals(Framework.spatialRF)
-
-    def JAX(self) -> QueryBuilder:
-        return self.equals(Framework.JAX)
-
-    def MXNet(self) -> QueryBuilder:
-        return self.equals(Framework.MXNet)
-
-    def Caffe(self) -> QueryBuilder:
-        return self.equals(Framework.Caffe)
-
-    def PyMC(self) -> QueryBuilder:
-        return self.equals(Framework.PyMC)
-
-    def Weka(self) -> QueryBuilder:
-        return self.equals(Framework.Weka)
-
-
-class _MLMExtension(_Extension):
-    """
-    This object represents the metadata for a Machine Learning Model (MLM) used in STAC documents.
-    """
-    def __init__(self, query_block: QueryBuilder):
-        super().__init__(query_block)
-        self.accelerator = _AcceleratorQuery.init_enums("mlm:accelerator", query_block, [x.value for x in Accelerator])
-        self.accelerator_constrained = _BooleanQuery("field_name", query_block)
-        self.accelerator_count = _NumberQuery.init_with_limits("mlm:accelerator_count", query_block, min_value=1, max_value=None, is_int=True)
-        self.accelerator_summary = _StringQuery("mlm:accelerator_summary", query_block)
-        self.architecture = _StringQuery("mlm:architecture", query_block)
-        self.batch_size_suggestion = _NumberQuery.init_with_limits("mlm:batch_size_suggestion", query_block, min_value=0, max_value=None, is_int=True)
-        self.framework = _FrameworkQuery.init_enums("mlm:framework", query_block, [x.value for x in Framework])
-        self.framework_version = _StringQuery("mlm:framework_version", query_block)
-        self.memory_size = _NumberQuery.init_with_limits("mlm:memory_size", query_block, min_value=0, max_value=None, is_int=True)
-        self.name = _StringQuery("mlm:name", query_block)
-        self.pretrained = _BooleanQuery("field_name", query_block)
-        self.pretrained_source = _StringQuery("mlm:pretrained_source", query_block)
-        self.total_parameters = _NumberQuery.init_with_limits("mlm:total_parameters", query_block, min_value=0, max_value=None, is_int=True)
-
-
-class OrbitState(str, Enum):
-    ascending = "ascending"
-    descending = "descending"
-    geostationary = "geostationary"
-
-
-class _OrbitStateQuery(_EnumQuery):
-    @classmethod
-    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _OrbitStateQuery(field_name, parent_obj)
-        o._enum_values = set(enum_fields)
-        return o
-
-    def equals(self, value: OrbitState) -> QueryBuilder:
-        self._check([value.value])
-        self._eq_value = value.value
-        return self._parent_obj
-
-    def in_set(self, values: list[OrbitState]) -> QueryBuilder:
-        extracted = [x.value for x in values]
-        self._check(extracted)
-        self._in_values = extracted
-        return self._parent_obj
-
-    def ascending(self) -> QueryBuilder:
-        return self.equals(OrbitState.ascending)
-
-    def descending(self) -> QueryBuilder:
-        return self.equals(OrbitState.descending)
-
-    def geostationary(self) -> QueryBuilder:
-        return self.equals(OrbitState.geostationary)
-
-
-class _SatExtension(_Extension):
-    """
-    STAC Sat Extension to a STAC Item.
-    """
-    def __init__(self, query_block: QueryBuilder):
-        super().__init__(query_block)
-        self.absolute_orbit = _NumberQuery.init_with_limits("sat:absolute_orbit", query_block, min_value=1, max_value=None, is_int=True)
-        self.anx_datetime = _DateQuery("field_name", query_block)
-        self.orbit_cycle = _NumberQuery.init_with_limits("sat:orbit_cycle", query_block, min_value=1, max_value=None, is_int=True)
-        self.orbit_state = _OrbitStateQuery.init_enums("sat:orbit_state", query_block, [x.value for x in OrbitState])
-        self.platform_international_designator = _StringQuery("sat:platform_international_designator", query_block)
-        self.relative_orbit = _NumberQuery.init_with_limits("sat:relative_orbit", query_block, min_value=1, max_value=None, is_int=True)
-
-
-class FrequencyBand(str, Enum):
-    P = "P"
-    L = "L"
-    S = "S"
-    C = "C"
-    X = "X"
-    Ku = "Ku"
-    K = "K"
-    Ka = "Ka"
-
-
-class _FrequencyBandQuery(_EnumQuery):
-    @classmethod
-    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _FrequencyBandQuery(field_name, parent_obj)
-        o._enum_values = set(enum_fields)
-        return o
-
-    def equals(self, value: FrequencyBand) -> QueryBuilder:
-        self._check([value.value])
-        self._eq_value = value.value
-        return self._parent_obj
-
-    def in_set(self, values: list[FrequencyBand]) -> QueryBuilder:
-        extracted = [x.value for x in values]
-        self._check(extracted)
-        self._in_values = extracted
-        return self._parent_obj
-
-    def P(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.P)
-
-    def L(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.L)
-
-    def S(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.S)
-
-    def C(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.C)
-
-    def X(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.X)
-
-    def Ku(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.Ku)
-
-    def K(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.K)
-
-    def Ka(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.Ka)
-
-
-class ObservationDirection(str, Enum):
-    left = "left"
-    right = "right"
-
-
-class _ObservationDirectionQuery(_EnumQuery):
-    @classmethod
-    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _ObservationDirectionQuery(field_name, parent_obj)
-        o._enum_values = set(enum_fields)
-        return o
-
-    def equals(self, value: ObservationDirection) -> QueryBuilder:
-        self._check([value.value])
-        self._eq_value = value.value
-        return self._parent_obj
-
-    def in_set(self, values: list[ObservationDirection]) -> QueryBuilder:
-        extracted = [x.value for x in values]
-        self._check(extracted)
-        self._in_values = extracted
-        return self._parent_obj
-
-    def left(self) -> QueryBuilder:
-        return self.equals(ObservationDirection.left)
-
-    def right(self) -> QueryBuilder:
-        return self.equals(ObservationDirection.right)
-
-
-class _SARExtension(_Extension):
-    """
-    STAC SAR Extension to a STAC Item
-    """
-    def __init__(self, query_block: QueryBuilder):
-        super().__init__(query_block)
-        self.center_frequency = _NumberQuery.init_with_limits("sar:center_frequency", query_block, min_value=None, max_value=None)
-        self.frequency_band = _FrequencyBandQuery.init_enums("sar:frequency_band", query_block, [x.value for x in FrequencyBand])
-        self.instrument_mode = _StringQuery("sar:instrument_mode", query_block)
-        self.looks_azimuth = _NumberQuery.init_with_limits("sar:looks_azimuth", query_block, min_value=0, max_value=None, is_int=True)
-        self.looks_equivalent_number = _NumberQuery.init_with_limits("sar:looks_equivalent_number", query_block, min_value=0, max_value=None)
-        self.looks_range = _NumberQuery.init_with_limits("sar:looks_range", query_block, min_value=0, max_value=None, is_int=True)
-        self.observation_direction = _ObservationDirectionQuery.init_enums("sar:observation_direction", query_block, [x.value for x in ObservationDirection])
-        self.pixel_spacing_azimuth = _NumberQuery.init_with_limits("sar:pixel_spacing_azimuth", query_block, min_value=0, max_value=None)
-        self.pixel_spacing_range = _NumberQuery.init_with_limits("sar:pixel_spacing_range", query_block, min_value=0, max_value=None)
-        self.product_type = _StringQuery("sar:product_type", query_block)
-        self.resolution_azimuth = _NumberQuery.init_with_limits("sar:resolution_azimuth", query_block, min_value=0, max_value=None)
-        self.resolution_range = _NumberQuery.init_with_limits("sar:resolution_range", query_block, min_value=0, max_value=None)
-
-
-class _ViewExtension(_Extension):
-    """
-    STAC View Geometry Extension for STAC Items and STAC Collections.
-    """
-    def __init__(self, query_block: QueryBuilder):
-        super().__init__(query_block)
-        self.azimuth = _NumberQuery.init_with_limits("view:azimuth", query_block, min_value=0, max_value=360)
-        self.incidence_angle = _NumberQuery.init_with_limits("view:incidence_angle", query_block, min_value=0, max_value=90)
-        self.off_nadir = _NumberQuery.init_with_limits("view:off_nadir", query_block, min_value=0, max_value=90)
-        self.sun_azimuth = _NumberQuery.init_with_limits("view:sun_azimuth", query_block, min_value=0, max_value=360)
-        self.sun_elevation = _NumberQuery.init_with_limits("view:sun_elevation", query_block, min_value=-90, max_value=90)
-
-
 class CommonName(str, Enum):
+    """
+    Common Name Enum
+    """
+
     pan = "pan"
     coastal = "coastal"
     blue = "blue"
@@ -723,6 +516,11 @@ class CommonName(str, Enum):
 
 
 class _CommonNameQuery(_EnumQuery):
+    """
+    Common Name Enum Query Interface
+    Common Name of the band
+    """
+
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
         o = _CommonNameQuery(field_name, parent_obj)
@@ -804,18 +602,39 @@ class _CommonNameQuery(_EnumQuery):
 class _EOExtension(_Extension):
     """
     STAC EO Extension for STAC Items and STAC Collections.
+
+    ...
+
+    Attributes
+    ----------
+    center_wavelength: _NumberQuery
+        number query interface for searching items by the eo:center_wavelength field. Float input.
+    cloud_cover: _NumberQuery
+        number query interface for searching items by the eo:cloud_cover field where the minimum value is 0 and the max value is 100. Float input.
+    common_name : _CommonNameQuery
+        enum query interface for searching items by the eo:common_name field
+    full_width_half_max: _NumberQuery
+        number query interface for searching items by the eo:full_width_half_max field. Float input.
+    snow_cover: _NumberQuery
+        number query interface for searching items by the eo:snow_cover field where the minimum value is 0 and the max value is 100. Float input.
+    solar_illumination: _NumberQuery
+        number query interface for searching items by the eo:solar_illumination field where the minimum value is 0. Float input.
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
-        self.center_wavelength = _NumberQuery.init_with_limits("eo:center_wavelength", query_block, min_value=None, max_value=None)
-        self.cloud_cover = _NumberQuery.init_with_limits("eo:cloud_cover", query_block, min_value=0, max_value=100)
+        self.center_wavelength = _NumberQuery.init_with_limits("eo:center_wavelength", query_block, min_value=None, max_value=None, is_int=False)
+        self.cloud_cover = _NumberQuery.init_with_limits("eo:cloud_cover", query_block, min_value=0, max_value=100, is_int=False)
         self.common_name = _CommonNameQuery.init_enums("eo:common_name", query_block, [x.value for x in CommonName])
-        self.full_width_half_max = _NumberQuery.init_with_limits("eo:full_width_half_max", query_block, min_value=None, max_value=None)
-        self.snow_cover = _NumberQuery.init_with_limits("eo:snow_cover", query_block, min_value=0, max_value=100)
-        self.solar_illumination = _NumberQuery.init_with_limits("eo:solar_illumination", query_block, min_value=0, max_value=None)
+        self.full_width_half_max = _NumberQuery.init_with_limits("eo:full_width_half_max", query_block, min_value=None, max_value=None, is_int=False)
+        self.snow_cover = _NumberQuery.init_with_limits("eo:snow_cover", query_block, min_value=0, max_value=100, is_int=False)
+        self.solar_illumination = _NumberQuery.init_with_limits("eo:solar_illumination", query_block, min_value=0, max_value=None, is_int=False)
 
 
 class CollectionCategory(str, Enum):
+    """
+    Collection Category Enum
+    """
+
     A1 = "A1"
     A2 = "A2"
     T1 = "T1"
@@ -824,6 +643,11 @@ class CollectionCategory(str, Enum):
 
 
 class _CollectionCategoryQuery(_EnumQuery):
+    """
+    Collection Category Enum Query Interface
+    Collection Category
+    """
+
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
         o = _CollectionCategoryQuery(field_name, parent_obj)
@@ -858,6 +682,10 @@ class _CollectionCategoryQuery(_EnumQuery):
 
 
 class Correction(str, Enum):
+    """
+    Correction Enum
+    """
+
     L1TP = "L1TP"
     L1GT = "L1GT"
     L1GS = "L1GS"
@@ -866,6 +694,11 @@ class Correction(str, Enum):
 
 
 class _CorrectionQuery(_EnumQuery):
+    """
+    Correction Enum Query Interface
+    Product Correction Level
+    """
+
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
         o = _CorrectionQuery(field_name, parent_obj)
@@ -902,23 +735,250 @@ class _CorrectionQuery(_EnumQuery):
 class _LandsatExtension(_Extension):
     """
     Landsat Extension to STAC Items.
+
+    ...
+
+    Attributes
+    ----------
+    cloud_cover_land: _NumberQuery
+        number query interface for searching items by the landsat:cloud_cover_land field where the minimum value is -1 and the max value is 100. Float input.
+    collection_category : _CollectionCategoryQuery
+        enum query interface for searching items by the landsat:collection_category field
+    collection_number : _StringQuery
+        string query interface for searching items by the landsat:collection_number field
+    correction : _CorrectionQuery
+        enum query interface for searching items by the landsat:correction field
+    product_generated : _DateQuery
+        datetime query interface for searching items by the landsat:product_generated field
+    scene_id : _StringQuery
+        string query interface for searching items by the landsat:scene_id field
+    wrs_path : _StringQuery
+        string query interface for searching items by the landsat:wrs_path field
+    wrs_row : _StringQuery
+        string query interface for searching items by the landsat:wrs_row field
+    wrs_type : _StringQuery
+        string query interface for searching items by the landsat:wrs_type field
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
-        self.cloud_cover_land = _NumberQuery.init_with_limits("landsat:cloud_cover_land", query_block, min_value=-1, max_value=100)
+        self.cloud_cover_land = _NumberQuery.init_with_limits("landsat:cloud_cover_land", query_block, min_value=-1, max_value=100, is_int=False)
         self.collection_category = _CollectionCategoryQuery.init_enums("landsat:collection_category", query_block, [x.value for x in CollectionCategory])
         self.collection_number = _StringQuery("landsat:collection_number", query_block)
         self.correction = _CorrectionQuery.init_enums("landsat:correction", query_block, [x.value for x in Correction])
-        self.product_generated = _DateQuery("field_name", query_block)
+        self.product_generated = _DateQuery("landsat:product_generated", query_block)
         self.scene_id = _StringQuery("landsat:scene_id", query_block)
         self.wrs_path = _StringQuery("landsat:wrs_path", query_block)
         self.wrs_row = _StringQuery("landsat:wrs_row", query_block)
         self.wrs_type = _StringQuery("landsat:wrs_type", query_block)
 
 
+class Accelerator(str, Enum):
+    """
+    Accelerator Enum
+    """
+
+    amd64 = "amd64"
+    cuda = "cuda"
+    xla = "xla"
+    amd_rocm = "amd-rocm"
+    intel_ipex_cpu = "intel-ipex-cpu"
+    intel_ipex_gpu = "intel-ipex-gpu"
+    macos_arm = "macos-arm"
+
+
+class _AcceleratorQuery(_EnumQuery):
+    """
+    Accelerator Enum Query Interface
+    """
+
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
+        o = _AcceleratorQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: Accelerator) -> QueryBuilder:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[Accelerator]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+    def amd64(self) -> QueryBuilder:
+        return self.equals(Accelerator.amd64)
+
+    def cuda(self) -> QueryBuilder:
+        return self.equals(Accelerator.cuda)
+
+    def xla(self) -> QueryBuilder:
+        return self.equals(Accelerator.xla)
+
+    def amd_rocm(self) -> QueryBuilder:
+        return self.equals(Accelerator.amd_rocm)
+
+    def intel_ipex_cpu(self) -> QueryBuilder:
+        return self.equals(Accelerator.intel_ipex_cpu)
+
+    def intel_ipex_gpu(self) -> QueryBuilder:
+        return self.equals(Accelerator.intel_ipex_gpu)
+
+    def macos_arm(self) -> QueryBuilder:
+        return self.equals(Accelerator.macos_arm)
+
+
+class Framework(str, Enum):
+    """
+    Framework Enum
+    """
+
+    PyTorch = "PyTorch"
+    TensorFlow = "TensorFlow"
+    scikit_learn = "scikit-learn"
+    Hugging_Face = "Hugging Face"
+    Keras = "Keras"
+    ONNX = "ONNX"
+    rgee = "rgee"
+    spatialRF = "spatialRF"
+    JAX = "JAX"
+    MXNet = "MXNet"
+    Caffe = "Caffe"
+    PyMC = "PyMC"
+    Weka = "Weka"
+
+
+class _FrameworkQuery(_EnumQuery):
+    """
+    Framework Enum Query Interface
+    Any other framework name to allow extension. Enum names should be preferred when possible to allow better portability.
+    """
+
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
+        o = _FrameworkQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: Framework) -> QueryBuilder:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[Framework]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+    def PyTorch(self) -> QueryBuilder:
+        return self.equals(Framework.PyTorch)
+
+    def TensorFlow(self) -> QueryBuilder:
+        return self.equals(Framework.TensorFlow)
+
+    def scikit_learn(self) -> QueryBuilder:
+        return self.equals(Framework.scikit_learn)
+
+    def Hugging_Face(self) -> QueryBuilder:
+        return self.equals(Framework.Hugging_Face)
+
+    def Keras(self) -> QueryBuilder:
+        return self.equals(Framework.Keras)
+
+    def ONNX(self) -> QueryBuilder:
+        return self.equals(Framework.ONNX)
+
+    def rgee(self) -> QueryBuilder:
+        return self.equals(Framework.rgee)
+
+    def spatialRF(self) -> QueryBuilder:
+        return self.equals(Framework.spatialRF)
+
+    def JAX(self) -> QueryBuilder:
+        return self.equals(Framework.JAX)
+
+    def MXNet(self) -> QueryBuilder:
+        return self.equals(Framework.MXNet)
+
+    def Caffe(self) -> QueryBuilder:
+        return self.equals(Framework.Caffe)
+
+    def PyMC(self) -> QueryBuilder:
+        return self.equals(Framework.PyMC)
+
+    def Weka(self) -> QueryBuilder:
+        return self.equals(Framework.Weka)
+
+
+class _MLMExtension(_Extension):
+    """
+    This object represents the metadata for a Machine Learning Model (MLM) used in STAC documents.
+
+    ...
+
+    Attributes
+    ----------
+    accelerator : _AcceleratorQuery
+        enum query interface for searching items by the mlm:accelerator field
+    accelerator_constrained : _BooleanQuery
+        enum query interface for searching items by the mlm:accelerator_constrained field
+    accelerator_count: _NumberQuery
+        number query interface for searching items by the mlm:accelerator_count field where the minimum value is 1. Float input.. Integer input.
+    accelerator_summary : _StringQuery
+        string query interface for searching items by the mlm:accelerator_summary field
+    architecture : _StringQuery
+        string query interface for searching items by the mlm:architecture field
+    batch_size_suggestion: _NumberQuery
+        number query interface for searching items by the mlm:batch_size_suggestion field where the minimum value is 0. Float input.. Integer input.
+    framework : _FrameworkQuery
+        enum query interface for searching items by the mlm:framework field
+    framework_version : _StringQuery
+        string query interface for searching items by the mlm:framework_version field
+    memory_size: _NumberQuery
+        number query interface for searching items by the mlm:memory_size field where the minimum value is 0. Float input.. Integer input.
+    name : _StringQuery
+        string query interface for searching items by the mlm:name field
+    pretrained : _BooleanQuery
+        enum query interface for searching items by the mlm:pretrained field
+    pretrained_source : _StringQuery
+        string query interface for searching items by the mlm:pretrained_source field
+    total_parameters: _NumberQuery
+        number query interface for searching items by the mlm:total_parameters field where the minimum value is 0. Float input.. Integer input.
+    """
+    def __init__(self, query_block: QueryBuilder):
+        super().__init__(query_block)
+        self.accelerator = _AcceleratorQuery.init_enums("mlm:accelerator", query_block, [x.value for x in Accelerator])
+        self.accelerator_constrained = _BooleanQuery("mlm:accelerator_constrained", query_block)
+        self.accelerator_count = _NumberQuery.init_with_limits("mlm:accelerator_count", query_block, min_value=1, max_value=None, is_int=True)
+        self.accelerator_summary = _StringQuery("mlm:accelerator_summary", query_block)
+        self.architecture = _StringQuery("mlm:architecture", query_block)
+        self.batch_size_suggestion = _NumberQuery.init_with_limits("mlm:batch_size_suggestion", query_block, min_value=0, max_value=None, is_int=True)
+        self.framework = _FrameworkQuery.init_enums("mlm:framework", query_block, [x.value for x in Framework])
+        self.framework_version = _StringQuery("mlm:framework_version", query_block)
+        self.memory_size = _NumberQuery.init_with_limits("mlm:memory_size", query_block, min_value=0, max_value=None, is_int=True)
+        self.name = _StringQuery("mlm:name", query_block)
+        self.pretrained = _BooleanQuery("mlm:pretrained", query_block)
+        self.pretrained_source = _StringQuery("mlm:pretrained_source", query_block)
+        self.total_parameters = _NumberQuery.init_with_limits("mlm:total_parameters", query_block, min_value=0, max_value=None, is_int=True)
+
+
 class _ProjExtension(_Extension):
     """
     STAC Projection Extension for STAC Items.
+
+    ...
+
+    Attributes
+    ----------
+    code : _StringQuery
+        string query interface for searching items by the proj:code field
+    geometry : _SpatialQuery
+        geometry query interface for searching items by the proj:geometry field
+    wkt2 : _StringQuery
+        string query interface for searching items by the proj:wkt2 field
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
@@ -927,29 +987,308 @@ class _ProjExtension(_Extension):
         self.wkt2 = _StringQuery("proj:wkt2", query_block)
 
 
+class FrequencyBand(str, Enum):
+    """
+    Frequency Band Enum
+    """
+
+    P = "P"
+    L = "L"
+    S = "S"
+    C = "C"
+    X = "X"
+    Ku = "Ku"
+    K = "K"
+    Ka = "Ka"
+
+
+class _FrequencyBandQuery(_EnumQuery):
+    """
+    Frequency Band Enum Query Interface
+    Frequency Band
+    """
+
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
+        o = _FrequencyBandQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: FrequencyBand) -> QueryBuilder:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[FrequencyBand]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+    def P(self) -> QueryBuilder:
+        return self.equals(FrequencyBand.P)
+
+    def L(self) -> QueryBuilder:
+        return self.equals(FrequencyBand.L)
+
+    def S(self) -> QueryBuilder:
+        return self.equals(FrequencyBand.S)
+
+    def C(self) -> QueryBuilder:
+        return self.equals(FrequencyBand.C)
+
+    def X(self) -> QueryBuilder:
+        return self.equals(FrequencyBand.X)
+
+    def Ku(self) -> QueryBuilder:
+        return self.equals(FrequencyBand.Ku)
+
+    def K(self) -> QueryBuilder:
+        return self.equals(FrequencyBand.K)
+
+    def Ka(self) -> QueryBuilder:
+        return self.equals(FrequencyBand.Ka)
+
+
+class ObservationDirection(str, Enum):
+    """
+    Observation Direction Enum
+    """
+
+    left = "left"
+    right = "right"
+
+
+class _ObservationDirectionQuery(_EnumQuery):
+    """
+    Observation Direction Enum Query Interface
+    Antenna pointing direction
+    """
+
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
+        o = _ObservationDirectionQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: ObservationDirection) -> QueryBuilder:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[ObservationDirection]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+    def left(self) -> QueryBuilder:
+        return self.equals(ObservationDirection.left)
+
+    def right(self) -> QueryBuilder:
+        return self.equals(ObservationDirection.right)
+
+
+class _SARExtension(_Extension):
+    """
+    STAC SAR Extension to a STAC Item
+
+    ...
+
+    Attributes
+    ----------
+    center_frequency: _NumberQuery
+        number query interface for searching items by the sar:center_frequency field. Float input.
+    frequency_band : _FrequencyBandQuery
+        enum query interface for searching items by the sar:frequency_band field
+    instrument_mode : _StringQuery
+        string query interface for searching items by the sar:instrument_mode field
+    looks_azimuth: _NumberQuery
+        number query interface for searching items by the sar:looks_azimuth field where the minimum value is 0. Float input.. Integer input.
+    looks_equivalent_number: _NumberQuery
+        number query interface for searching items by the sar:looks_equivalent_number field where the minimum value is 0. Float input.
+    looks_range: _NumberQuery
+        number query interface for searching items by the sar:looks_range field where the minimum value is 0. Float input.. Integer input.
+    observation_direction : _ObservationDirectionQuery
+        enum query interface for searching items by the sar:observation_direction field
+    pixel_spacing_azimuth: _NumberQuery
+        number query interface for searching items by the sar:pixel_spacing_azimuth field where the minimum value is 0. Float input.
+    pixel_spacing_range: _NumberQuery
+        number query interface for searching items by the sar:pixel_spacing_range field where the minimum value is 0. Float input.
+    product_type : _StringQuery
+        string query interface for searching items by the sar:product_type field
+    resolution_azimuth: _NumberQuery
+        number query interface for searching items by the sar:resolution_azimuth field where the minimum value is 0. Float input.
+    resolution_range: _NumberQuery
+        number query interface for searching items by the sar:resolution_range field where the minimum value is 0. Float input.
+    """
+    def __init__(self, query_block: QueryBuilder):
+        super().__init__(query_block)
+        self.center_frequency = _NumberQuery.init_with_limits("sar:center_frequency", query_block, min_value=None, max_value=None, is_int=False)
+        self.frequency_band = _FrequencyBandQuery.init_enums("sar:frequency_band", query_block, [x.value for x in FrequencyBand])
+        self.instrument_mode = _StringQuery("sar:instrument_mode", query_block)
+        self.looks_azimuth = _NumberQuery.init_with_limits("sar:looks_azimuth", query_block, min_value=0, max_value=None, is_int=True)
+        self.looks_equivalent_number = _NumberQuery.init_with_limits("sar:looks_equivalent_number", query_block, min_value=0, max_value=None, is_int=False)
+        self.looks_range = _NumberQuery.init_with_limits("sar:looks_range", query_block, min_value=0, max_value=None, is_int=True)
+        self.observation_direction = _ObservationDirectionQuery.init_enums("sar:observation_direction", query_block, [x.value for x in ObservationDirection])
+        self.pixel_spacing_azimuth = _NumberQuery.init_with_limits("sar:pixel_spacing_azimuth", query_block, min_value=0, max_value=None, is_int=False)
+        self.pixel_spacing_range = _NumberQuery.init_with_limits("sar:pixel_spacing_range", query_block, min_value=0, max_value=None, is_int=False)
+        self.product_type = _StringQuery("sar:product_type", query_block)
+        self.resolution_azimuth = _NumberQuery.init_with_limits("sar:resolution_azimuth", query_block, min_value=0, max_value=None, is_int=False)
+        self.resolution_range = _NumberQuery.init_with_limits("sar:resolution_range", query_block, min_value=0, max_value=None, is_int=False)
+
+
+class OrbitState(str, Enum):
+    """
+    Orbit State Enum
+    """
+
+    ascending = "ascending"
+    descending = "descending"
+    geostationary = "geostationary"
+
+
+class _OrbitStateQuery(_EnumQuery):
+    """
+    Orbit State Enum Query Interface
+    Orbit State
+    """
+
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
+        o = _OrbitStateQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: OrbitState) -> QueryBuilder:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[OrbitState]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+    def ascending(self) -> QueryBuilder:
+        return self.equals(OrbitState.ascending)
+
+    def descending(self) -> QueryBuilder:
+        return self.equals(OrbitState.descending)
+
+    def geostationary(self) -> QueryBuilder:
+        return self.equals(OrbitState.geostationary)
+
+
+class _SatExtension(_Extension):
+    """
+    STAC Sat Extension to a STAC Item.
+
+    ...
+
+    Attributes
+    ----------
+    absolute_orbit: _NumberQuery
+        number query interface for searching items by the sat:absolute_orbit field where the minimum value is 1. Float input.. Integer input.
+    anx_datetime : _DateQuery
+        datetime query interface for searching items by the sat:anx_datetime field
+    orbit_cycle: _NumberQuery
+        number query interface for searching items by the sat:orbit_cycle field where the minimum value is 1. Float input.. Integer input.
+    orbit_state : _OrbitStateQuery
+        enum query interface for searching items by the sat:orbit_state field
+    platform_international_designator : _StringQuery
+        string query interface for searching items by the sat:platform_international_designator field
+    relative_orbit: _NumberQuery
+        number query interface for searching items by the sat:relative_orbit field where the minimum value is 1. Float input.. Integer input.
+    """
+    def __init__(self, query_block: QueryBuilder):
+        super().__init__(query_block)
+        self.absolute_orbit = _NumberQuery.init_with_limits("sat:absolute_orbit", query_block, min_value=1, max_value=None, is_int=True)
+        self.anx_datetime = _DateQuery("sat:anx_datetime", query_block)
+        self.orbit_cycle = _NumberQuery.init_with_limits("sat:orbit_cycle", query_block, min_value=1, max_value=None, is_int=True)
+        self.orbit_state = _OrbitStateQuery.init_enums("sat:orbit_state", query_block, [x.value for x in OrbitState])
+        self.platform_international_designator = _StringQuery("sat:platform_international_designator", query_block)
+        self.relative_orbit = _NumberQuery.init_with_limits("sat:relative_orbit", query_block, min_value=1, max_value=None, is_int=True)
+
+
+class _ViewExtension(_Extension):
+    """
+    STAC View Geometry Extension for STAC Items and STAC Collections.
+
+    ...
+
+    Attributes
+    ----------
+    azimuth: _NumberQuery
+        number query interface for searching items by the view:azimuth field where the minimum value is 0 and the max value is 360. Float input.
+    incidence_angle: _NumberQuery
+        number query interface for searching items by the view:incidence_angle field where the minimum value is 0 and the max value is 90. Float input.
+    off_nadir: _NumberQuery
+        number query interface for searching items by the view:off_nadir field where the minimum value is 0 and the max value is 90. Float input.
+    sun_azimuth: _NumberQuery
+        number query interface for searching items by the view:sun_azimuth field where the minimum value is 0 and the max value is 360. Float input.
+    sun_elevation: _NumberQuery
+        number query interface for searching items by the view:sun_elevation field where the minimum value is -90 and the max value is 90. Float input.
+    """
+    def __init__(self, query_block: QueryBuilder):
+        super().__init__(query_block)
+        self.azimuth = _NumberQuery.init_with_limits("view:azimuth", query_block, min_value=0, max_value=360, is_int=False)
+        self.incidence_angle = _NumberQuery.init_with_limits("view:incidence_angle", query_block, min_value=0, max_value=90, is_int=False)
+        self.off_nadir = _NumberQuery.init_with_limits("view:off_nadir", query_block, min_value=0, max_value=90, is_int=False)
+        self.sun_azimuth = _NumberQuery.init_with_limits("view:sun_azimuth", query_block, min_value=0, max_value=360, is_int=False)
+        self.sun_elevation = _NumberQuery.init_with_limits("view:sun_elevation", query_block, min_value=-90, max_value=90, is_int=False)
+
+
 class QueryBuilder:
+    """
+    class for building cql2-json queries
+
+    ...
+
+    Attributes
+    ----------
+    id : _StringQuery
+        string query interface for identifier is unique within a Collection
+    datetime : _DateQuery
+        datetime query interface for searching the datetime of assets
+    geometry : _SpatialQuery
+        spatial query interface
+    created : _DateQuery
+        datetime query interface for searching items by the created field
+    updated : _DateQuery
+        datetime query interface for searching items by the updated field
+    start_datetime : _DateQuery
+        datetime query interface for searching items by the start_datetime field
+    end_datetime : _DateQuery
+        datetime query interface for searching items by the end_datetime field
+    platform : _StringQuery
+        string query interface for searching items by the platform field
+    mission : _StringQuery
+        string query interface for searching items by the mission field
+    """
+
     def __init__(self):
         self._filter_expressions: list[_QueryTuple] = []
-        self.datetime = _DateQuery("datetime", self)
         self.id = _StringQuery("id", self)
+        self.datetime = _DateQuery("datetime", self)
         self.geometry = _SpatialQuery("geometry", self)
         self.created = _DateQuery("created", self)
         self.updated = _DateQuery("updated", self)
         self.start_datetime = _DateQuery("start_datetime", self)
         self.end_datetime = _DateQuery("end_datetime", self)
         self.platform = _StringQuery("platform", self)
-        self.constellation = _StringQuery("constellation", self)
         self.mission = _StringQuery("mission", self)
         self.gsd = _NumberQuery.init_with_limits("gsd", self, min_value=0)
-        self.mlm = _MLMExtension(self)
-        self.sat = _SatExtension(self)
-        self.sar = _SARExtension(self)
-        self.view = _ViewExtension(self)
         self.eo = _EOExtension(self)
         self.landsat = _LandsatExtension(self)
+        self.mlm = _MLMExtension(self)
         self.proj = _ProjExtension(self)
+        self.sar = _SARExtension(self)
+        self.sat = _SatExtension(self)
+        self.view = _ViewExtension(self)
 
-    def build_query(self, top_level_is_or=False):
+    def query_dump(self, top_level_is_or=False):
         properties = list(vars(self).values())
         args = [x._build_query() for x in properties if isinstance(x, _QueryBase) and x._build_query() is not None]
         for query_filter in self._filter_expressions:
@@ -970,6 +1309,12 @@ class QueryBuilder:
                 "op": top_level_op,
                 "args": args}
         }
+
+    def query_dump_json(self, top_level_is_or=False, indent=None, sort_keys=False):
+        return json.dumps(self.query_dump(top_level_is_or=top_level_is_or),
+                          indent=indent,
+                          sort_keys=sort_keys,
+                          cls=_DateTimeEncoder)
 
     def filter(self, *column_expression):
         query_tuple = column_expression[0]

@@ -1,4 +1,8 @@
 class Accelerator(str, Enum):
+    """
+    Accelerator Enum
+    """
+
     amd64 = "amd64"
     cuda = "cuda"
     xla = "xla"
@@ -9,6 +13,10 @@ class Accelerator(str, Enum):
 
 
 class _AcceleratorQuery(_EnumQuery):
+    """
+    Accelerator Enum Query Interface
+    """
+
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
         o = _AcceleratorQuery(field_name, parent_obj)
@@ -28,6 +36,10 @@ class _AcceleratorQuery(_EnumQuery):
 
 
 class Framework(str, Enum):
+    """
+    Framework Enum
+    """
+
     PyTorch = "PyTorch"
     TensorFlow = "TensorFlow"
     scikit_learn = "scikit-learn"
@@ -44,6 +56,11 @@ class Framework(str, Enum):
 
 
 class _FrameworkQuery(_EnumQuery):
+    """
+    Framework Enum Query Interface
+    Any other framework name to allow extension. Enum names should be preferred when possible to allow better portability.
+    """
+
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
         o = _FrameworkQuery(field_name, parent_obj)
@@ -65,11 +82,42 @@ class _FrameworkQuery(_EnumQuery):
 class _MLMExtension(_Extension):
     """
     This object represents the metadata for a Machine Learning Model (MLM) used in STAC documents.
+
+    ...
+
+    Attributes
+    ----------
+    accelerator : _AcceleratorQuery
+        enum query interface for searching items by the mlm:accelerator field
+    accelerator_constrained : _BooleanQuery
+        enum query interface for searching items by the mlm:accelerator_constrained field
+    accelerator_count: _NumberQuery
+        number query interface for searching items by the mlm:accelerator_count field where the minimum value is 1. Float input.. Integer input.
+    accelerator_summary : _StringQuery
+        string query interface for searching items by the mlm:accelerator_summary field
+    architecture : _StringQuery
+        string query interface for searching items by the mlm:architecture field
+    batch_size_suggestion: _NumberQuery
+        number query interface for searching items by the mlm:batch_size_suggestion field where the minimum value is 0. Float input.. Integer input.
+    framework : _FrameworkQuery
+        enum query interface for searching items by the mlm:framework field
+    framework_version : _StringQuery
+        string query interface for searching items by the mlm:framework_version field
+    memory_size: _NumberQuery
+        number query interface for searching items by the mlm:memory_size field where the minimum value is 0. Float input.. Integer input.
+    name : _StringQuery
+        string query interface for searching items by the mlm:name field
+    pretrained : _BooleanQuery
+        enum query interface for searching items by the mlm:pretrained field
+    pretrained_source : _StringQuery
+        string query interface for searching items by the mlm:pretrained_source field
+    total_parameters: _NumberQuery
+        number query interface for searching items by the mlm:total_parameters field where the minimum value is 0. Float input.. Integer input.
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
         self.accelerator = _AcceleratorQuery.init_enums("mlm:accelerator", query_block, [x.value for x in Accelerator])
-        self.accelerator_constrained = _BooleanQuery("field_name", query_block)
+        self.accelerator_constrained = _BooleanQuery("mlm:accelerator_constrained", query_block)
         self.accelerator_count = _NumberQuery.init_with_limits("mlm:accelerator_count", query_block, min_value=1, max_value=None, is_int=True)
         self.accelerator_summary = _StringQuery("mlm:accelerator_summary", query_block)
         self.architecture = _StringQuery("mlm:architecture", query_block)
@@ -78,6 +126,6 @@ class _MLMExtension(_Extension):
         self.framework_version = _StringQuery("mlm:framework_version", query_block)
         self.memory_size = _NumberQuery.init_with_limits("mlm:memory_size", query_block, min_value=0, max_value=None, is_int=True)
         self.name = _StringQuery("mlm:name", query_block)
-        self.pretrained = _BooleanQuery("field_name", query_block)
+        self.pretrained = _BooleanQuery("mlm:pretrained", query_block)
         self.pretrained_source = _StringQuery("mlm:pretrained_source", query_block)
         self.total_parameters = _NumberQuery.init_with_limits("mlm:total_parameters", query_block, min_value=0, max_value=None, is_int=True)

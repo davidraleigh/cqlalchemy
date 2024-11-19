@@ -1,4 +1,8 @@
 class CommonName(str, Enum):
+    """
+    Common Name Enum
+    """
+
     pan = "pan"
     coastal = "coastal"
     blue = "blue"
@@ -22,6 +26,11 @@ class CommonName(str, Enum):
 
 
 class _CommonNameQuery(_EnumQuery):
+    """
+    Common Name Enum Query Interface
+    Common Name of the band
+    """
+
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
         o = _CommonNameQuery(field_name, parent_obj)
@@ -43,12 +52,29 @@ class _CommonNameQuery(_EnumQuery):
 class _EOExtension(_Extension):
     """
     STAC EO Extension for STAC Items and STAC Collections.
+
+    ...
+
+    Attributes
+    ----------
+    center_wavelength: _NumberQuery
+        number query interface for searching items by the eo:center_wavelength field. Float input.
+    cloud_cover: _NumberQuery
+        number query interface for searching items by the eo:cloud_cover field where the minimum value is 0 and the max value is 100. Float input.
+    common_name : _CommonNameQuery
+        enum query interface for searching items by the eo:common_name field
+    full_width_half_max: _NumberQuery
+        number query interface for searching items by the eo:full_width_half_max field. Float input.
+    snow_cover: _NumberQuery
+        number query interface for searching items by the eo:snow_cover field where the minimum value is 0 and the max value is 100. Float input.
+    solar_illumination: _NumberQuery
+        number query interface for searching items by the eo:solar_illumination field where the minimum value is 0. Float input.
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
-        self.center_wavelength = _NumberQuery.init_with_limits("eo:center_wavelength", query_block, min_value=None, max_value=None)
-        self.cloud_cover = _NumberQuery.init_with_limits("eo:cloud_cover", query_block, min_value=0, max_value=100)
+        self.center_wavelength = _NumberQuery.init_with_limits("eo:center_wavelength", query_block, min_value=None, max_value=None, is_int=False)
+        self.cloud_cover = _NumberQuery.init_with_limits("eo:cloud_cover", query_block, min_value=0, max_value=100, is_int=False)
         self.common_name = _CommonNameQuery.init_enums("eo:common_name", query_block, [x.value for x in CommonName])
-        self.full_width_half_max = _NumberQuery.init_with_limits("eo:full_width_half_max", query_block, min_value=None, max_value=None)
-        self.snow_cover = _NumberQuery.init_with_limits("eo:snow_cover", query_block, min_value=0, max_value=100)
-        self.solar_illumination = _NumberQuery.init_with_limits("eo:solar_illumination", query_block, min_value=0, max_value=None)
+        self.full_width_half_max = _NumberQuery.init_with_limits("eo:full_width_half_max", query_block, min_value=None, max_value=None, is_int=False)
+        self.snow_cover = _NumberQuery.init_with_limits("eo:snow_cover", query_block, min_value=0, max_value=100, is_int=False)
+        self.solar_illumination = _NumberQuery.init_with_limits("eo:solar_illumination", query_block, min_value=0, max_value=None, is_int=False)

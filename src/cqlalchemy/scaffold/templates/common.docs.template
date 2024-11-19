@@ -1,0 +1,16 @@
+    created : _DateQuery
+        datetime query interface for searching items by the created field
+    updated : _DateQuery
+        datetime query interface for searching items by the updated field
+    start_datetime : _DateQuery
+        datetime query interface for searching items by the start_datetime field
+    end_datetime : _DateQuery
+        datetime query interface for searching items by the end_datetime field
+    platform : _StringQuery
+        string query interface for searching items by the platform field
+    constellation : _StringQuery
+        string query interface for searching items by the constellation field
+    mission : _StringQuery
+        string query interface for searching items by the mission field
+    gsd: _NumberQuery
+        number query interface for searching items by the gsd field
