@@ -419,6 +419,14 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["sortby"][0]["field"], "sar:observation_direction")
         self.assertEqual(a_dict["sortby"][0]["direction"], "desc")
 
+    def test_null_projection(self):
+        a = QueryBuilder()
+        a.proj.bbox.is_null()
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "isNull")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "proj:bbox")
+        self.assertEqual(1, len(a_dict["filter"]["args"][0]["args"][0]))
+
 
 if __name__ == '__main__':
     unittest.main()
