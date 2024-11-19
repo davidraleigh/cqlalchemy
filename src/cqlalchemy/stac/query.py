@@ -1,4 +1,4 @@
-# This file is generated with version 0.0.5 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
+# This file is generated with version 0.0.6 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
 
 from __future__ import annotations
 
@@ -1062,14 +1062,22 @@ class _MLMExtension(_Extension):
         enum query interface for searching items by the mlm:framework field
     framework_version : _StringQuery
         string query interface for searching items by the mlm:framework_version field
+    hyperparameters : _NullCheck
+        field can be checked to see if mlm:hyperparameters is null
+    input : _NullCheck
+        field can be checked to see if mlm:input is null
     memory_size: _NumberQuery
         number query interface for searching items by the mlm:memory_size field where the minimum value is 0. Float input.. Integer input.
     name : _StringQuery
         string query interface for searching items by the mlm:name field
+    output : _NullCheck
+        field can be checked to see if mlm:output is null
     pretrained : _BooleanQuery
         enum query interface for searching items by the mlm:pretrained field
     pretrained_source : _StringQuery
         string query interface for searching items by the mlm:pretrained_source field
+    tasks : _NullCheck
+        field can be checked to see if mlm:tasks is null
     total_parameters: _NumberQuery
         number query interface for searching items by the mlm:total_parameters field where the minimum value is 0. Float input.. Integer input.
     """
@@ -1083,10 +1091,14 @@ class _MLMExtension(_Extension):
         self.batch_size_suggestion = _NumberQuery.init_with_limits("mlm:batch_size_suggestion", query_block, min_value=0, max_value=None, is_int=True)
         self.framework = _FrameworkQuery.init_enums("mlm:framework", query_block, [x.value for x in Framework])
         self.framework_version = _StringQuery("mlm:framework_version", query_block)
+        self.hyperparameters = _NullCheck("mlm:hyperparameters", query_block)
+        self.input = _NullCheck("mlm:input", query_block)
         self.memory_size = _NumberQuery.init_with_limits("mlm:memory_size", query_block, min_value=0, max_value=None, is_int=True)
         self.name = _StringQuery("mlm:name", query_block)
+        self.output = _NullCheck("mlm:output", query_block)
         self.pretrained = _BooleanQuery("mlm:pretrained", query_block)
         self.pretrained_source = _StringQuery("mlm:pretrained_source", query_block)
+        self.tasks = _NullCheck("mlm:tasks", query_block)
         self.total_parameters = _NumberQuery.init_with_limits("mlm:total_parameters", query_block, min_value=0, max_value=None, is_int=True)
 
 
@@ -1098,17 +1110,29 @@ class _ProjExtension(_Extension):
 
     Attributes
     ----------
+    bbox : _NullCheck
+        field can be checked to see if proj:bbox is null
+    centroid : _NullCheck
+        field can be checked to see if proj:centroid is null
     code : _StringQuery
         string query interface for searching items by the proj:code field
     geometry : _SpatialQuery
         geometry query interface for searching items by the proj:geometry field
+    shape : _NullCheck
+        field can be checked to see if proj:shape is null
+    transform : _NullCheck
+        field can be checked to see if proj:transform is null
     wkt2 : _StringQuery
         string query interface for searching items by the proj:wkt2 field
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
+        self.bbox = _NullCheck("proj:bbox", query_block)
+        self.centroid = _NullCheck("proj:centroid", query_block)
         self.code = _StringQuery("proj:code", query_block)
         self.geometry = _SpatialQuery("proj:geometry", query_block)
+        self.shape = _NullCheck("proj:shape", query_block)
+        self.transform = _NullCheck("proj:transform", query_block)
         self.wkt2 = _StringQuery("proj:wkt2", query_block)
 
 
@@ -1222,6 +1246,8 @@ class _SARExtension(_Extension):
 
     Attributes
     ----------
+    beam_ids : _NullCheck
+        field can be checked to see if sar:beam_ids is null
     center_frequency: _NumberQuery
         number query interface for searching items by the sar:center_frequency field. Float input.
     frequency_band : _FrequencyBandQuery
@@ -1240,6 +1266,8 @@ class _SARExtension(_Extension):
         number query interface for searching items by the sar:pixel_spacing_azimuth field where the minimum value is 0. Float input.
     pixel_spacing_range: _NumberQuery
         number query interface for searching items by the sar:pixel_spacing_range field where the minimum value is 0. Float input.
+    polarizations : _NullCheck
+        field can be checked to see if sar:polarizations is null
     product_type : _StringQuery
         string query interface for searching items by the sar:product_type field
     resolution_azimuth: _NumberQuery
@@ -1249,6 +1277,7 @@ class _SARExtension(_Extension):
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
+        self.beam_ids = _NullCheck("sar:beam_ids", query_block)
         self.center_frequency = _NumberQuery.init_with_limits("sar:center_frequency", query_block, min_value=None, max_value=None, is_int=False)
         self.frequency_band = _FrequencyBandQuery.init_enums("sar:frequency_band", query_block, [x.value for x in FrequencyBand])
         self.instrument_mode = _StringQuery("sar:instrument_mode", query_block)
@@ -1258,6 +1287,7 @@ class _SARExtension(_Extension):
         self.observation_direction = _ObservationDirectionQuery.init_enums("sar:observation_direction", query_block, [x.value for x in ObservationDirection])
         self.pixel_spacing_azimuth = _NumberQuery.init_with_limits("sar:pixel_spacing_azimuth", query_block, min_value=0, max_value=None, is_int=False)
         self.pixel_spacing_range = _NumberQuery.init_with_limits("sar:pixel_spacing_range", query_block, min_value=0, max_value=None, is_int=False)
+        self.polarizations = _NullCheck("sar:polarizations", query_block)
         self.product_type = _StringQuery("sar:product_type", query_block)
         self.resolution_azimuth = _NumberQuery.init_with_limits("sar:resolution_azimuth", query_block, min_value=0, max_value=None, is_int=False)
         self.resolution_range = _NumberQuery.init_with_limits("sar:resolution_range", query_block, min_value=0, max_value=None, is_int=False)
