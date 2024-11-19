@@ -4,7 +4,12 @@ from datetime import date, datetime, timedelta, timezone
 
 from shapely import Point
 
-from cqlalchemy.stac.query import ObservationDirection, QueryBuilder, _NumberQuery
+from cqlalchemy.stac.query import (
+    Framework,
+    ObservationDirection,
+    QueryBuilder,
+    _NumberQuery,
+)
 
 
 class STACTestCase(unittest.TestCase):
@@ -301,6 +306,103 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(q_dict["filter"]["args"][0]["op"], "=")
         self.assertEqual(q_dict["filter"]["args"][0]["args"][0]["property"], "mlm:accelerator_constrained")
         self.assertEqual(q_dict["filter"]["args"][0]["args"][1], True)
+
+    def test_dump_json(self):
+        d = datetime(2024, 1, 5, 0, 1, 2, tzinfo=timezone.utc)
+        q = QueryBuilder()
+        q.mlm.accelerator_constrained.equals(True)
+        q.datetime.lt(d)
+        q.eo.cloud_cover.gt(4)
+        q.geometry.intersects(Point(45, 65))
+        q.proj.geometry.intersects(Point(22, 44))
+        q.platform.equals("Umbra-09")
+        q.mlm.framework.equals(Framework.Hugging_Face)
+
+        dumped_json = q.query_dump_json()
+        self.assertIn("2024-01-05T00:01:02+00:00", dumped_json)
+        self.assertIn("\"coordinates\": [45.0", dumped_json)
+        self.assertIn("\"Umbra-09\"", dumped_json)
+        self.assertIn("\"Hugging Face\"", dumped_json)
+        self.assertIn("\"type\": \"Point", dumped_json)
+        self.assertIsNotNone(q.query_dump_json(indent=2))
+
+    def test_is_null_boolean(self):
+        q = QueryBuilder()
+        q.mlm.accelerator_constrained.equals(True)
+        q_dict = q.query_dump()
+        self.assertEqual(q_dict["filter"]["args"][0]["op"], "=")
+        self.assertEqual(q_dict["filter"]["args"][0]["args"][0]["property"], "mlm:accelerator_constrained")
+        self.assertEqual(q_dict["filter"]["args"][0]["args"][1], True)
+        q.mlm.accelerator_constrained.is_null()
+        q_dict = q.query_dump()
+        self.assertEqual(q_dict["filter"]["args"][0]["op"], "isNull")
+        self.assertEqual(q_dict["filter"]["args"][0]["args"][0]["property"], "mlm:accelerator_constrained")
+        self.assertEqual(1, len(q_dict["filter"]["args"][0]["args"]))
+
+    def test_is_null_enum(self):
+        q = QueryBuilder()
+        q.mlm.framework.is_null()
+        q_dict = q.query_dump()
+        self.assertEqual(q_dict["filter"]["args"][0]["op"], "isNull")
+        self.assertEqual(q_dict["filter"]["args"][0]["args"][0]["property"], "mlm:framework")
+        self.assertEqual(1, len(q_dict["filter"]["args"][0]["args"]))
+        q.mlm.framework.in_set([Framework.Hugging_Face, Framework.JAX])
+        q_dict = q.query_dump()
+        self.assertEqual(q_dict["filter"]["args"][0]["op"], "in")
+        self.assertEqual(q_dict["filter"]["args"][0]["args"][0]["property"], "mlm:framework")
+        self.assertEqual(q_dict["filter"]["args"][0]["args"][1], ['Hugging Face', 'JAX'])
+        q.mlm.framework.is_null()
+        q_dict = q.query_dump()
+        self.assertEqual(q_dict["filter"]["args"][0]["op"], "isNull")
+        self.assertEqual(q_dict["filter"]["args"][0]["args"][0]["property"], "mlm:framework")
+        self.assertEqual(1, len(q_dict["filter"]["args"][0]["args"]))
+        q.mlm.framework.in_set([Framework.Hugging_Face, Framework.JAX])
+        q_dict = q.query_dump()
+        self.assertEqual(q_dict["filter"]["args"][0]["op"], "in")
+        self.assertEqual(q_dict["filter"]["args"][0]["args"][0]["property"], "mlm:framework")
+        self.assertEqual(q_dict["filter"]["args"][0]["args"][1], ['Hugging Face', 'JAX'])
+
+    def test_is_null_date_query(self):
+        q = QueryBuilder()
+        q.datetime.is_null()
+        q_dict = q.query_dump()
+        self.assertEqual(q_dict["filter"]["args"][0]["op"], "isNull")
+        self.assertEqual(q_dict["filter"]["args"][0]["args"][0]["property"], "datetime")
+        self.assertEqual(1, len(q_dict["filter"]["args"][0]["args"][0]))
+        q.datetime.equals(datetime.now(tz=timezone.utc))
+        q_dict = q.query_dump()
+        self.assertEqual(q_dict["filter"]["args"][0]["op"], "=")
+        self.assertEqual(q_dict["filter"]["args"][0]["args"][0]["property"], "datetime")
+        self.assertEqual(2, len(q_dict["filter"]["args"][0]["args"]))
+
+    def test_is_null_number(self):
+        q = QueryBuilder()
+        q.eo.cloud_cover.gt(45)
+        q.eo.cloud_cover.lt(33)
+        q_dict = q.query_dump()
+        self.assertEqual(q_dict["filter"]["args"][0]["op"], "or")
+        self.assertEqual(q_dict["filter"]["args"][0]["args"][0]["op"], ">")
+        self.assertEqual(2, len(q_dict["filter"]["args"][0]["args"]))
+        q.eo.cloud_cover.is_null()
+        q_dict = q.query_dump()
+        self.assertEqual(q_dict["filter"]["args"][0]["op"], "isNull")
+        self.assertEqual(q_dict["filter"]["args"][0]["args"][0]["property"], "eo:cloud_cover")
+        self.assertEqual(1, len(q_dict["filter"]["args"][0]["args"][0]))
+
+    def test_is_null_spatial(self):
+        a = QueryBuilder()
+        a.geometry.intersects(Point(4, 5))
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "s_intersects")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "geometry")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["type"], "Point")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["coordinates"][0], 4)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["coordinates"][1], 5)
+        a.geometry.is_null()
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "isNull")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "geometry")
+        self.assertEqual(1, len(a_dict["filter"]["args"][0]["args"][0]))
 
 
 if __name__ == '__main__':
