@@ -404,6 +404,21 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "geometry")
         self.assertEqual(1, len(a_dict["filter"]["args"][0]["args"][0]))
 
+    def test_sortby_asc(self):
+        a = QueryBuilder()
+        a.geometry.intersects(Point(4, 5)).datetime.sort_by_asc()
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["sortby"][0]["field"], "datetime")
+        self.assertEqual(a_dict["sortby"][0]["direction"], "asc")
+        a.sar.observation_direction.sort_by_asc()
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["sortby"][0]["field"], "sar:observation_direction")
+        self.assertEqual(a_dict["sortby"][0]["direction"], "asc")
+        a.sar.observation_direction.sort_by_desc()
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["sortby"][0]["field"], "sar:observation_direction")
+        self.assertEqual(a_dict["sortby"][0]["direction"], "desc")
+
 
 if __name__ == '__main__':
     unittest.main()

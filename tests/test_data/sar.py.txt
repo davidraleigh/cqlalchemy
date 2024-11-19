@@ -78,6 +78,8 @@ class _SARExtension(_Extension):
 
     Attributes
     ----------
+    beam_ids : _NullCheck
+        field can be checked to see if sar:beam_ids is null
     center_frequency: _NumberQuery
         number query interface for searching items by the sar:center_frequency field. Float input.
     frequency_band : _FrequencyBandQuery
@@ -96,6 +98,8 @@ class _SARExtension(_Extension):
         number query interface for searching items by the sar:pixel_spacing_azimuth field where the minimum value is 0. Float input.
     pixel_spacing_range: _NumberQuery
         number query interface for searching items by the sar:pixel_spacing_range field where the minimum value is 0. Float input.
+    polarizations : _NullCheck
+        field can be checked to see if sar:polarizations is null
     product_type : _StringQuery
         string query interface for searching items by the sar:product_type field
     resolution_azimuth: _NumberQuery
@@ -105,6 +109,7 @@ class _SARExtension(_Extension):
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
+        self.beam_ids = _NullCheck("sar:beam_ids", query_block)
         self.center_frequency = _NumberQuery.init_with_limits("sar:center_frequency", query_block, min_value=None, max_value=None, is_int=False)
         self.frequency_band = _FrequencyBandQuery.init_enums("sar:frequency_band", query_block, [x.value for x in FrequencyBand])
         self.instrument_mode = _StringQuery("sar:instrument_mode", query_block)
@@ -114,6 +119,7 @@ class _SARExtension(_Extension):
         self.observation_direction = _ObservationDirectionQuery.init_enums("sar:observation_direction", query_block, [x.value for x in ObservationDirection])
         self.pixel_spacing_azimuth = _NumberQuery.init_with_limits("sar:pixel_spacing_azimuth", query_block, min_value=0, max_value=None, is_int=False)
         self.pixel_spacing_range = _NumberQuery.init_with_limits("sar:pixel_spacing_range", query_block, min_value=0, max_value=None, is_int=False)
+        self.polarizations = _NullCheck("sar:polarizations", query_block)
         self.product_type = _StringQuery("sar:product_type", query_block)
         self.resolution_azimuth = _NumberQuery.init_with_limits("sar:resolution_azimuth", query_block, min_value=0, max_value=None, is_int=False)
         self.resolution_range = _NumberQuery.init_with_limits("sar:resolution_range", query_block, min_value=0, max_value=None, is_int=False)

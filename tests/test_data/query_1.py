@@ -1,4 +1,4 @@
-# This file is generated with version 0.0.5 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
+# This file is generated with version 0.0.6 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import math
 from datetime import date, datetime, timedelta, timezone
 from enum import Enum
 from json import JSONEncoder
+from typing import Optional
 
 from shapely.geometry.base import BaseGeometry
 
@@ -91,6 +92,14 @@ class _QueryBase:
         self._field_name = field_name
         self._parent_obj = parent_obj
 
+    def sort_by_asc(self):
+        self._parent_obj._sort_by_field = self._field_name
+        self._parent_obj._sort_by_direction = "asc"
+
+    def sort_by_desc(self):
+        self._parent_obj._sort_by_field = self._field_name
+        self._parent_obj._sort_by_direction = "desc"
+
     def _build_query(self):
         pass
 
@@ -171,6 +180,29 @@ class _BooleanQuery(_QueryBase):
                 "args": [self.property_obj, self._eq_value]
             }
         elif self._is_null is not None and self._is_null is True:
+            return {
+                "op": "isNull",
+                "args": [self.property_obj]
+            }
+        return None
+
+
+class _NullCheck(_QueryBase):
+    _is_null = None
+
+    def is_null(self) -> QueryBuilder:
+        """
+        for the field, query for all items where this field is null
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
+        self._clear_values()
+        self._is_null = True
+        return self._parent_obj
+
+    def _build_query(self):
+        if self._is_null is not None and self._is_null is True:
             return {
                 "op": "isNull",
                 "args": [self.property_obj]
@@ -743,6 +775,8 @@ class _SARExtension(_Extension):
 
     Attributes
     ----------
+    beam_ids : _NullCheck
+        field can be checked to see if sar:beam_ids is null
     center_frequency: _NumberQuery
         number query interface for searching items by the sar:center_frequency field. Float input.
     frequency_band : _FrequencyBandQuery
@@ -761,6 +795,8 @@ class _SARExtension(_Extension):
         number query interface for searching items by the sar:pixel_spacing_azimuth field where the minimum value is 0. Float input.
     pixel_spacing_range: _NumberQuery
         number query interface for searching items by the sar:pixel_spacing_range field where the minimum value is 0. Float input.
+    polarizations : _NullCheck
+        field can be checked to see if sar:polarizations is null
     product_type : _StringQuery
         string query interface for searching items by the sar:product_type field
     resolution_azimuth: _NumberQuery
@@ -770,6 +806,7 @@ class _SARExtension(_Extension):
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
+        self.beam_ids = _NullCheck("sar:beam_ids", query_block)
         self.center_frequency = _NumberQuery.init_with_limits("sar:center_frequency", query_block, min_value=None, max_value=None, is_int=False)
         self.frequency_band = _FrequencyBandQuery.init_enums("sar:frequency_band", query_block, [x.value for x in FrequencyBand])
         self.instrument_mode = _StringQuery("sar:instrument_mode", query_block)
@@ -779,6 +816,7 @@ class _SARExtension(_Extension):
         self.observation_direction = _ObservationDirectionQuery.init_enums("sar:observation_direction", query_block, [x.value for x in ObservationDirection])
         self.pixel_spacing_azimuth = _NumberQuery.init_with_limits("sar:pixel_spacing_azimuth", query_block, min_value=0, max_value=None, is_int=False)
         self.pixel_spacing_range = _NumberQuery.init_with_limits("sar:pixel_spacing_range", query_block, min_value=0, max_value=None, is_int=False)
+        self.polarizations = _NullCheck("sar:polarizations", query_block)
         self.product_type = _StringQuery("sar:product_type", query_block)
         self.resolution_azimuth = _NumberQuery.init_with_limits("sar:resolution_azimuth", query_block, min_value=0, max_value=None, is_int=False)
         self.resolution_range = _NumberQuery.init_with_limits("sar:resolution_range", query_block, min_value=0, max_value=None, is_int=False)
@@ -905,6 +943,8 @@ class QueryBuilder:
     gsd: _NumberQuery
         number query interface for searching items by the gsd field
     """
+    _sort_by_field = None
+    _sort_by_direction = "asc"
 
     def __init__(self):
         self._filter_expressions: list[_QueryTuple] = []
@@ -924,7 +964,7 @@ class QueryBuilder:
         self.view = _ViewExtension(self)
         self.sat = _SatExtension(self)
 
-    def query_dump(self, top_level_is_or=False):
+    def query_dump(self, top_level_is_or=False, limit: Optional[int] = None):
         properties = list(vars(self).values())
         args = [x._build_query() for x in properties if isinstance(x, _QueryBase) and x._build_query() is not None]
         for query_filter in self._filter_expressions:
@@ -939,15 +979,20 @@ class QueryBuilder:
         top_level_op = "and"
         if top_level_is_or:
             top_level_op = "or"
-        return {
+        post_body = {
             "filter-lang": "cql2-json",
             "filter": {
                 "op": top_level_op,
                 "args": args}
         }
+        if limit:
+            post_body["limit"] = limit
+        if self._sort_by_field:
+            post_body["sortby"] = [{"field": self._sort_by_field, "direction": self._sort_by_direction}]
+        return post_body
 
-    def query_dump_json(self, top_level_is_or=False, indent=None, sort_keys=False):
-        return json.dumps(self.query_dump(top_level_is_or=top_level_is_or),
+    def query_dump_json(self, top_level_is_or=False, indent=None, sort_keys=False, limit: Optional[int] = None):
+        return json.dumps(self.query_dump(top_level_is_or=top_level_is_or, limit=limit),
                           indent=indent,
                           sort_keys=sort_keys,
                           cls=_DateTimeEncoder)
