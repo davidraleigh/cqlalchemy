@@ -95,6 +95,7 @@ class _QueryBase:
         pass
 
     def __eq__(self, other):
+        # TODO, check for None and implement an is null
         return _QueryTuple(self, "=", other)
 
     def __gt__(self, other):
@@ -126,9 +127,17 @@ class _QueryBase:
     def _check(self, value):
         pass
 
+    def _clear_values(self):
+        pass
+
 
 class _BooleanQuery(_QueryBase):
     _eq_value = None
+    _is_null = None
+
+    def _clear_values(self):
+        self._is_null = None
+        self._eq_value = None
 
     def equals(self, value: bool) -> QueryBuilder:
         """
@@ -140,7 +149,19 @@ class _BooleanQuery(_QueryBase):
         Returns:
             QueryBuilder: query builder for additional queries to add
         """
+        self._clear_values()
         self._eq_value = value
+        return self._parent_obj
+
+    def is_null(self) -> QueryBuilder:
+        """
+        for the field, query for all items where this field is null
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
+        self._clear_values()
+        self._is_null = True
         return self._parent_obj
 
     def _build_query(self):
@@ -149,6 +170,11 @@ class _BooleanQuery(_QueryBase):
                 "op": "=",
                 "args": [self.property_obj, self._eq_value]
             }
+        elif self._is_null is not None and self._is_null is True:
+            return {
+                "op": "isNull",
+                "args": [self.property_obj]
+            }
         return None
 
 
@@ -156,6 +182,24 @@ class _BaseString(_QueryBase):
     _eq_value = None
     _in_values = None
     _like_value = None
+    _is_null = None
+
+    def _clear_values(self):
+        self._is_null = None
+        self._eq_value = None
+        self._in_values = None
+        self._like_value = None
+
+    def is_null(self) -> QueryBuilder:
+        """
+        for the field, query for all items where this field is null
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
+        self._clear_values()
+        self._is_null = True
+        return self._parent_obj
 
     def _build_query(self):
         if self._eq_value is not None:
@@ -178,6 +222,11 @@ class _BaseString(_QueryBase):
                     self.property_obj,
                     self._like_value
                 ]
+            }
+        elif self._is_null is not None and self._is_null is True:
+            return {
+                "op": "isNull",
+                "args": [self.property_obj]
             }
         return None
 
@@ -254,12 +303,18 @@ class _Query(_QueryBase):
     _lt_value = None
     _lt_operand = None
     _eq_value = None
+    _is_null = None
 
     def _build_query(self):
         if self._eq_value is not None:
             return {
                 "op": "=",
                 "args": [self.property_obj, self._eq_value]
+            }
+        elif self._is_null is not None and self._is_null is True:
+            return {
+                "op": "isNull",
+                "args": [self.property_obj]
             }
         elif self._gt_value is None and self._lt_value is None:
             return None
@@ -302,6 +357,7 @@ class _Query(_QueryBase):
             QueryBuilder: query builder for additional queries to add
         """
         self._check(value)
+        self._clear_values()
         self._eq_value = value
         return self._parent_obj
 
@@ -368,6 +424,25 @@ class _Query(_QueryBase):
         self._lt_value = value
         self._lt_operand = "<="
         return self._parent_obj
+
+    def is_null(self) -> QueryBuilder:
+        """
+        for the field, query for all items where this field is null
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
+        self._clear_values()
+        self._is_null = True
+        return self._parent_obj
+
+    def _clear_values(self):
+        self._gt_value = None
+        self._gt_operand = None
+        self._lt_value = None
+        self._lt_operand = None
+        self._eq_value = None
+        self._is_null = None
 
 
 class _DateQuery(_Query):
@@ -455,12 +530,30 @@ class _NumberQuery(_Query):
 
 class _SpatialQuery(_QueryBase):
     _geometry = None
+    _is_null = None
 
     def intersects(self, geometry: BaseGeometry) -> QueryBuilder:
         self._geometry = geometry
+        self._is_null = None
+        return self._parent_obj
+
+    def is_null(self) -> QueryBuilder:
+        """
+        for the field, query for all items where this field is null
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
+        self._geometry = None
+        self._is_null = True
         return self._parent_obj
 
     def _build_query(self):
+        if self._is_null is not None:
+            return {
+                "op": "isNull",
+                "args": [self.property_obj]
+            }
         if self._geometry is None:
             return None
 
