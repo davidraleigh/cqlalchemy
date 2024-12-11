@@ -1065,6 +1065,8 @@ class _MLMExtension(_Extension):
         string query interface for searching items by the mlm:accelerator_summary field
     architecture : _StringQuery
         string query interface for searching items by the mlm:architecture field
+    artifact_type : _StringQuery
+        string query interface for searching items by the mlm:artifact_type field
     batch_size_suggestion: _NumberQuery
         number query interface for searching items by the mlm:batch_size_suggestion field where the minimum value is 0. Float input.. Integer input.
     framework : _FrameworkQuery
@@ -1097,6 +1099,7 @@ class _MLMExtension(_Extension):
         self.accelerator_count = _NumberQuery.init_with_limits("mlm:accelerator_count", query_block, min_value=1, max_value=None, is_int=True)
         self.accelerator_summary = _StringQuery("mlm:accelerator_summary", query_block)
         self.architecture = _StringQuery("mlm:architecture", query_block)
+        self.artifact_type = _StringQuery("mlm:artifact_type", query_block)
         self.batch_size_suggestion = _NumberQuery.init_with_limits("mlm:batch_size_suggestion", query_block, min_value=0, max_value=None, is_int=True)
         self.framework = _FrameworkQuery.init_enums("mlm:framework", query_block, [x.value for x in Framework])
         self.framework_version = _StringQuery("mlm:framework_version", query_block)
@@ -1428,8 +1431,12 @@ class QueryBuilder:
         datetime query interface for searching items by the end_datetime field
     platform : _StringQuery
         string query interface for searching items by the platform field
+    constellation : _StringQuery
+        string query interface for searching items by the constellation field
     mission : _StringQuery
         string query interface for searching items by the mission field
+    gsd: _NumberQuery
+        number query interface for searching items by the gsd field
     """
     _sort_by_field = None
     _sort_by_direction = "asc"
@@ -1444,6 +1451,7 @@ class QueryBuilder:
         self.start_datetime = _DateQuery("start_datetime", self)
         self.end_datetime = _DateQuery("end_datetime", self)
         self.platform = _StringQuery("platform", self)
+        self.constellation = _StringQuery("constellation", self)
         self.mission = _StringQuery("mission", self)
         self.gsd = _NumberQuery.init_with_limits("gsd", self, min_value=0)
         self.eo = _EOExtension(self)
