@@ -536,6 +536,12 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["sortby"][0]["field"], "sar:observation_direction")
         self.assertEqual(a_dict["sortby"][0]["direction"], "desc")
 
+    def test_limit(self):
+        a = QueryBuilder()
+        a.geometry.intersects(Point(4, 5)).datetime.sort_by_asc()
+        a_dict = a.query_dump(limit=5)
+        self.assertEqual(a_dict["limit"], 5)
+
     def test_null_projection(self):
         a = QueryBuilder()
         a.proj.bbox.is_null()

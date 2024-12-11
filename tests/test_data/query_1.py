@@ -292,7 +292,7 @@ class _StringQuery(_BaseString):
         Returns:
             QueryBuilder: query builder for additional queries to add
         """
-        self._check(value)
+        self._clear_values()
         self._eq_value = value
         return self._parent_obj
 
@@ -306,7 +306,7 @@ class _StringQuery(_BaseString):
         Returns:
             QueryBuilder: query builder for additional queries to add
         """
-        self._check(values)
+        self._clear_values()
         self._in_values = values
         return self._parent_obj
 
@@ -320,13 +320,14 @@ class _StringQuery(_BaseString):
         Returns:
             QueryBuilder: query builder for additional queries to add
         """
-        self._check(value)
+        self._clear_values()
         self._like_value = value
         return self._parent_obj
 
-    def _check(self, value):
-        if self._in_values is not None or self._eq_value is not None or self._like_value is not None:
-            raise ValueError("eq, in or like cannot already be set")
+    def _clear_values(self):
+        self._in_values = None
+        self._eq_value = None
+        self._like_value = None
 
 
 class _Query(_QueryBase):
@@ -405,6 +406,8 @@ class _Query(_QueryBase):
         """
         self._check(value)
         self._greater_check(value)
+        self._eq_value = None
+        self._is_null = None
         self._gt_value = value
         self._gt_operand = ">"
         return self._parent_obj
@@ -421,6 +424,8 @@ class _Query(_QueryBase):
         """
         self._check(value)
         self._greater_check(value)
+        self._eq_value = None
+        self._is_null = None
         self._gt_value = value
         self._gt_operand = ">="
         return self._parent_obj
@@ -437,6 +442,8 @@ class _Query(_QueryBase):
         """
         self._check(value)
         self._less_check(value)
+        self._eq_value = None
+        self._is_null = None
         self._lt_value = value
         self._lt_operand = "<"
         return self._parent_obj
@@ -453,6 +460,8 @@ class _Query(_QueryBase):
         """
         self._check(value)
         self._less_check(value)
+        self._eq_value = None
+        self._is_null = None
         self._lt_value = value
         self._lt_operand = "<="
         return self._parent_obj
