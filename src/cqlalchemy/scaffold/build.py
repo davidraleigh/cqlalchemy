@@ -16,6 +16,7 @@ number_query_attr_template = Template(pkgutil.get_data(__name__, "templates/numb
 enum_query_attr_template = Template(pkgutil.get_data(__name__, "templates/enum.query.attr.template").decode('utf-8'))
 
 ENUM_MEMBERS = "    {member} = \"{value}\"\n"
+SORTABLE_IS_NULL_ATTR = "        self.{partial_name} = _NullCheck(\"{field_name}\", query_block)\n"
 DATETIME_QUERY_EXT_ATTR = "        self.{partial_name} = _DateQuery(\"{field_name}\", query_block)\n"
 BOOLEAN_QUERY_EXT_ATTR = "        self.{partial_name} = _BooleanQuery(\"{field_name}\", query_block)\n"
 DATETIME_QUERY_ATTR = "        self.{partial_name} = _DateQuery(\"{field_name}\", self)\n"
@@ -63,6 +64,8 @@ def other_attr_doc(partial_name, class_name, field_name):
         data_type = "string"
     elif class_name == "_SpatialQuery":
         data_type = "geometry"
+    elif class_name == "_NullCheck":
+        return f"    {partial_name} : {class_name}\n        field can be checked to see if {field_name} is null\n"
 
     return f"    {partial_name} : {class_name}\n        {data_type} query interface for searching items by the {field_name} field\n"
 
@@ -273,6 +276,10 @@ class ExtensionBuilder:
                                                       class_name="_SpatialQuery",
                                                       field_name=field_name)
             elif field_obj["type"] in ["array", "object"]:
+                attribute_instantiations += SORTABLE_IS_NULL_ATTR.format(field_name=field_name, partial_name=partial_name)
+                extension_attr_docs += other_attr_doc(partial_name=partial_name,
+                                                      class_name="_NullCheck",
+                                                      field_name=field_name)
                 logger.info(f"not producing type {field_obj['type']}")
             else:
                 raise ValueError(f"{field_obj['type']} not a processed type")

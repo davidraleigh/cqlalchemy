@@ -27,13 +27,16 @@ def build():
                     extensions[extension] = json.load(fp)
             else:
                 if not extension.startswith("http"):
+                    if "/" in extension:
+                        raise ValueError("path does not exist")
+
                     logger.warning(f"treating input {extension} like extension json-ld code")
                     extension = f"https://raw.githubusercontent.com/stac-extensions/{extension}/refs/heads/main/json-schema/schema.json"
                 response = requests.get(extension)
                 response.raise_for_status()
                 extensions[extension] = response.json()
         except BaseException as be:
-            click.echo(f"{extension} failed with {be}")
+            click.echo(f"{extension} failed with '{be}' exception")
 
     click.echo("Enter stac fields to omit from api or a path with a list of fields to omit:")
     while True:

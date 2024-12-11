@@ -1,4 +1,4 @@
-# This file is generated with version 0.0.5 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
+# This file is generated with version 0.0.6 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import math
 from datetime import date, datetime, timedelta, timezone
 from enum import Enum
 from json import JSONEncoder
+from typing import Optional
 
 from shapely.geometry.base import BaseGeometry
 
@@ -91,10 +92,19 @@ class _QueryBase:
         self._field_name = field_name
         self._parent_obj = parent_obj
 
+    def sort_by_asc(self):
+        self._parent_obj._sort_by_field = self._field_name
+        self._parent_obj._sort_by_direction = "asc"
+
+    def sort_by_desc(self):
+        self._parent_obj._sort_by_field = self._field_name
+        self._parent_obj._sort_by_direction = "desc"
+
     def _build_query(self):
         pass
 
     def __eq__(self, other):
+        # TODO, check for None and implement an is null
         return _QueryTuple(self, "=", other)
 
     def __gt__(self, other):
@@ -126,9 +136,17 @@ class _QueryBase:
     def _check(self, value):
         pass
 
+    def _clear_values(self):
+        pass
+
 
 class _BooleanQuery(_QueryBase):
     _eq_value = None
+    _is_null = None
+
+    def _clear_values(self):
+        self._is_null = None
+        self._eq_value = None
 
     def equals(self, value: bool) -> QueryBuilder:
         """
@@ -140,7 +158,19 @@ class _BooleanQuery(_QueryBase):
         Returns:
             QueryBuilder: query builder for additional queries to add
         """
+        self._clear_values()
         self._eq_value = value
+        return self._parent_obj
+
+    def is_null(self) -> QueryBuilder:
+        """
+        for the field, query for all items where this field is null
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
+        self._clear_values()
+        self._is_null = True
         return self._parent_obj
 
     def _build_query(self):
@@ -149,6 +179,34 @@ class _BooleanQuery(_QueryBase):
                 "op": "=",
                 "args": [self.property_obj, self._eq_value]
             }
+        elif self._is_null is not None and self._is_null is True:
+            return {
+                "op": "isNull",
+                "args": [self.property_obj]
+            }
+        return None
+
+
+class _NullCheck(_QueryBase):
+    _is_null = None
+
+    def is_null(self) -> QueryBuilder:
+        """
+        for the field, query for all items where this field is null
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
+        self._clear_values()
+        self._is_null = True
+        return self._parent_obj
+
+    def _build_query(self):
+        if self._is_null is not None and self._is_null is True:
+            return {
+                "op": "isNull",
+                "args": [self.property_obj]
+            }
         return None
 
 
@@ -156,6 +214,24 @@ class _BaseString(_QueryBase):
     _eq_value = None
     _in_values = None
     _like_value = None
+    _is_null = None
+
+    def _clear_values(self):
+        self._is_null = None
+        self._eq_value = None
+        self._in_values = None
+        self._like_value = None
+
+    def is_null(self) -> QueryBuilder:
+        """
+        for the field, query for all items where this field is null
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
+        self._clear_values()
+        self._is_null = True
+        return self._parent_obj
 
     def _build_query(self):
         if self._eq_value is not None:
@@ -178,6 +254,11 @@ class _BaseString(_QueryBase):
                     self.property_obj,
                     self._like_value
                 ]
+            }
+        elif self._is_null is not None and self._is_null is True:
+            return {
+                "op": "isNull",
+                "args": [self.property_obj]
             }
         return None
 
@@ -211,7 +292,7 @@ class _StringQuery(_BaseString):
         Returns:
             QueryBuilder: query builder for additional queries to add
         """
-        self._check(value)
+        self._clear_values()
         self._eq_value = value
         return self._parent_obj
 
@@ -225,7 +306,7 @@ class _StringQuery(_BaseString):
         Returns:
             QueryBuilder: query builder for additional queries to add
         """
-        self._check(values)
+        self._clear_values()
         self._in_values = values
         return self._parent_obj
 
@@ -239,13 +320,14 @@ class _StringQuery(_BaseString):
         Returns:
             QueryBuilder: query builder for additional queries to add
         """
-        self._check(value)
+        self._clear_values()
         self._like_value = value
         return self._parent_obj
 
-    def _check(self, value):
-        if self._in_values is not None or self._eq_value is not None or self._like_value is not None:
-            raise ValueError("eq, in or like cannot already be set")
+    def _clear_values(self):
+        self._in_values = None
+        self._eq_value = None
+        self._like_value = None
 
 
 class _Query(_QueryBase):
@@ -254,12 +336,18 @@ class _Query(_QueryBase):
     _lt_value = None
     _lt_operand = None
     _eq_value = None
+    _is_null = None
 
     def _build_query(self):
         if self._eq_value is not None:
             return {
                 "op": "=",
                 "args": [self.property_obj, self._eq_value]
+            }
+        elif self._is_null is not None and self._is_null is True:
+            return {
+                "op": "isNull",
+                "args": [self.property_obj]
             }
         elif self._gt_value is None and self._lt_value is None:
             return None
@@ -302,6 +390,7 @@ class _Query(_QueryBase):
             QueryBuilder: query builder for additional queries to add
         """
         self._check(value)
+        self._clear_values()
         self._eq_value = value
         return self._parent_obj
 
@@ -317,6 +406,8 @@ class _Query(_QueryBase):
         """
         self._check(value)
         self._greater_check(value)
+        self._eq_value = None
+        self._is_null = None
         self._gt_value = value
         self._gt_operand = ">"
         return self._parent_obj
@@ -333,6 +424,8 @@ class _Query(_QueryBase):
         """
         self._check(value)
         self._greater_check(value)
+        self._eq_value = None
+        self._is_null = None
         self._gt_value = value
         self._gt_operand = ">="
         return self._parent_obj
@@ -349,6 +442,8 @@ class _Query(_QueryBase):
         """
         self._check(value)
         self._less_check(value)
+        self._eq_value = None
+        self._is_null = None
         self._lt_value = value
         self._lt_operand = "<"
         return self._parent_obj
@@ -365,9 +460,30 @@ class _Query(_QueryBase):
         """
         self._check(value)
         self._less_check(value)
+        self._eq_value = None
+        self._is_null = None
         self._lt_value = value
         self._lt_operand = "<="
         return self._parent_obj
+
+    def is_null(self) -> QueryBuilder:
+        """
+        for the field, query for all items where this field is null
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
+        self._clear_values()
+        self._is_null = True
+        return self._parent_obj
+
+    def _clear_values(self):
+        self._gt_value = None
+        self._gt_operand = None
+        self._lt_value = None
+        self._lt_operand = None
+        self._eq_value = None
+        self._is_null = None
 
 
 class _DateQuery(_Query):
@@ -455,12 +571,30 @@ class _NumberQuery(_Query):
 
 class _SpatialQuery(_QueryBase):
     _geometry = None
+    _is_null = None
 
     def intersects(self, geometry: BaseGeometry) -> QueryBuilder:
         self._geometry = geometry
+        self._is_null = None
+        return self._parent_obj
+
+    def is_null(self) -> QueryBuilder:
+        """
+        for the field, query for all items where this field is null
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
+        self._geometry = None
+        self._is_null = True
         return self._parent_obj
 
     def _build_query(self):
+        if self._is_null is not None:
+            return {
+                "op": "isNull",
+                "args": [self.property_obj]
+            }
         if self._geometry is None:
             return None
 
@@ -650,6 +784,8 @@ class _SARExtension(_Extension):
 
     Attributes
     ----------
+    beam_ids : _NullCheck
+        field can be checked to see if sar:beam_ids is null
     center_frequency: _NumberQuery
         number query interface for searching items by the sar:center_frequency field. Float input.
     frequency_band : _FrequencyBandQuery
@@ -668,6 +804,8 @@ class _SARExtension(_Extension):
         number query interface for searching items by the sar:pixel_spacing_azimuth field where the minimum value is 0. Float input.
     pixel_spacing_range: _NumberQuery
         number query interface for searching items by the sar:pixel_spacing_range field where the minimum value is 0. Float input.
+    polarizations : _NullCheck
+        field can be checked to see if sar:polarizations is null
     product_type : _StringQuery
         string query interface for searching items by the sar:product_type field
     resolution_azimuth: _NumberQuery
@@ -677,6 +815,7 @@ class _SARExtension(_Extension):
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
+        self.beam_ids = _NullCheck("sar:beam_ids", query_block)
         self.center_frequency = _NumberQuery.init_with_limits("sar:center_frequency", query_block, min_value=None, max_value=None, is_int=False)
         self.frequency_band = _FrequencyBandQuery.init_enums("sar:frequency_band", query_block, [x.value for x in FrequencyBand])
         self.instrument_mode = _StringQuery("sar:instrument_mode", query_block)
@@ -686,6 +825,7 @@ class _SARExtension(_Extension):
         self.observation_direction = _ObservationDirectionQuery.init_enums("sar:observation_direction", query_block, [x.value for x in ObservationDirection])
         self.pixel_spacing_azimuth = _NumberQuery.init_with_limits("sar:pixel_spacing_azimuth", query_block, min_value=0, max_value=None, is_int=False)
         self.pixel_spacing_range = _NumberQuery.init_with_limits("sar:pixel_spacing_range", query_block, min_value=0, max_value=None, is_int=False)
+        self.polarizations = _NullCheck("sar:polarizations", query_block)
         self.product_type = _StringQuery("sar:product_type", query_block)
         self.resolution_azimuth = _NumberQuery.init_with_limits("sar:resolution_azimuth", query_block, min_value=0, max_value=None, is_int=False)
         self.resolution_range = _NumberQuery.init_with_limits("sar:resolution_range", query_block, min_value=0, max_value=None, is_int=False)
@@ -812,6 +952,8 @@ class QueryBuilder:
     gsd: _NumberQuery
         number query interface for searching items by the gsd field
     """
+    _sort_by_field = None
+    _sort_by_direction = "asc"
 
     def __init__(self):
         self._filter_expressions: list[_QueryTuple] = []
@@ -831,7 +973,7 @@ class QueryBuilder:
         self.view = _ViewExtension(self)
         self.sat = _SatExtension(self)
 
-    def query_dump(self, top_level_is_or=False):
+    def query_dump(self, top_level_is_or=False, limit: Optional[int] = None):
         properties = list(vars(self).values())
         args = [x._build_query() for x in properties if isinstance(x, _QueryBase) and x._build_query() is not None]
         for query_filter in self._filter_expressions:
@@ -846,15 +988,20 @@ class QueryBuilder:
         top_level_op = "and"
         if top_level_is_or:
             top_level_op = "or"
-        return {
+        post_body = {
             "filter-lang": "cql2-json",
             "filter": {
                 "op": top_level_op,
                 "args": args}
         }
+        if limit:
+            post_body["limit"] = limit
+        if self._sort_by_field:
+            post_body["sortby"] = [{"field": self._sort_by_field, "direction": self._sort_by_direction}]
+        return post_body
 
-    def query_dump_json(self, top_level_is_or=False, indent=None, sort_keys=False):
-        return json.dumps(self.query_dump(top_level_is_or=top_level_is_or),
+    def query_dump_json(self, top_level_is_or=False, indent=None, sort_keys=False, limit: Optional[int] = None):
+        return json.dumps(self.query_dump(top_level_is_or=top_level_is_or, limit=limit),
                           indent=indent,
                           sort_keys=sort_keys,
                           cls=_DateTimeEncoder)
