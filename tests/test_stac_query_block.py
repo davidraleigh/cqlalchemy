@@ -37,6 +37,33 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "created")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1], t)
 
+    def test_created_overwrite_lt(self):
+        a = QueryBuilder()
+        t = datetime.now(tz=timezone.utc)
+        a.created.lte(t)
+        a.created.lt(t)
+        a_dict = a.query_dump()
+
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "<")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "created")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], t)
+
+    def test_created_overwrite_eq(self):
+        a = QueryBuilder()
+        t = datetime.now(tz=timezone.utc)
+        a.created.lte(t)
+        a.query_dump()
+        a.created.equals(t)
+        a_dict = a.query_dump()
+
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "=")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "created")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], t)
+
     def test_updated(self):
         a = QueryBuilder()
         t = datetime.now(tz=timezone.utc)
@@ -120,6 +147,23 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "platform")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1], "Landsat%")
 
+    def test_platform_overwrite_like(self):
+        a = QueryBuilder()
+        a.platform.equals("Landsat8")
+        a_dict = a.query_dump()
+
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "=")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "platform")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], "Landsat8")
+
+        a.platform.like("Landsat%")
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "like")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "platform")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], "Landsat%")
+
     def test_gsd(self):
         a = QueryBuilder()
         a.view.azimuth.gte(0.25)
@@ -135,6 +179,30 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["op"], "<=")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][0]["property"], "view:azimuth")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1], 0.75)
+
+    def test_gsd_overwrite_equals(self):
+        a = QueryBuilder()
+        a.view.azimuth.gte(0.25)
+        a.view.azimuth.lte(0.75)
+        a_dict = a.query_dump()
+
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["op"], ">=")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][0]["property"], "view:azimuth")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][1], 0.25)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["op"], "<=")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][0]["property"], "view:azimuth")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1], 0.75)
+
+        a.view.azimuth.equals(0.5)
+        a_dict = a.query_dump()
+
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "=")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "view:azimuth")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], 0.5)
 
     def test_spatial(self):
         a = QueryBuilder()
@@ -155,6 +223,24 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["op"], "s_intersects")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "geometry")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["type"], "Polygon")
+
+    def test_spatial_overwrite_null(self):
+        a = QueryBuilder()
+        a.geometry.is_null()
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "isNull")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "geometry")
+        self.assertEqual(1, len(a_dict["filter"]["args"][0]["args"][0]))
+
+        a.geometry.intersects(Point(4, 5))
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "s_intersects")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "geometry")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["type"], "Point")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["coordinates"][0], 4)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["coordinates"][1], 5)
 
     def test_top_level_is_or(self):
         a = QueryBuilder()
@@ -188,6 +274,37 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["op"], "<")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][0]["property"], "datetime")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1], end)
+
+    def test_datetime_range_and_overwrite(self):
+        start = datetime.now(tz=timezone.utc)
+        end = start + timedelta(days=1)
+        a = QueryBuilder()
+        a.datetime.gt(start).datetime.lt(end)
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["op"], ">")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][0]["property"], "datetime")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][1], start)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["op"], "<")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][0]["property"], "datetime")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1], end)
+
+        a.datetime.equals(start.date(), tzinfo=timezone.utc)
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["op"], ">=")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][0]["property"], "datetime")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][1], datetime(start.year, start.month, start.day, 0, 0, 0, tzinfo=timezone.utc))
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["op"], "<=")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][0]["property"], "datetime")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1], datetime(start.year, start.month,
+                                                                                     start.day, 23, 59,
+                                                                                     59, 999999,
+                                                                                     tzinfo=timezone.utc))
 
     def test_datetime_range_or(self):
         start = datetime.now(tz=timezone.utc)
