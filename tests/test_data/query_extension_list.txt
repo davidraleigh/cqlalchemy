@@ -1,0 +1,7 @@
+view
+sat
+sar
+eo
+landsat
+mlm
+https://stac-extensions.github.io/projection/v2.0.0/schema.json

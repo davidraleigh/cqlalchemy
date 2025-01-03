@@ -1,4 +1,18 @@
-# This file is generated with version 0.0.6 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
+# This file is generated with version 0.0.7 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
+#
+# extensions includes are:
+# https://stac-extensions.github.io/eo/v2.0.0/schema.json#
+# https://stac-extensions.github.io/sar/v1.0.0/schema.json
+# https://stac-extensions.github.io/view/v1.0.0/schema.json#
+# https://stac-extensions.github.io/sat/v1.0.0/schema.json
+#
+# ignored fields are:
+# None
+#
+# unique Enum classes generated:
+# False
+#
+# generated on 2025-01-03
 
 from __future__ import annotations
 

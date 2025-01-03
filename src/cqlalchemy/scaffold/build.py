@@ -1,3 +1,4 @@
+import datetime
 import logging
 import pkgutil
 from string import Template
@@ -292,6 +293,11 @@ class ExtensionBuilder:
 
 
 def build_query_file(extension_list: list[dict], fields_to_exclude=None, add_unique_enum=False) -> str:
+    if fields_to_exclude is None:
+        fields_to_exclude = []
+    else:
+        fields_to_exclude = list(fields_to_exclude)
+
     extension_definitions = ""
     extension_attributes = ""
     for extension_schema in extension_list:
@@ -315,8 +321,16 @@ def build_query_file(extension_list: list[dict], fields_to_exclude=None, add_uni
     else:
         common_docs_props = "\n" + common_docs_template.substitute()
 
+    sorted_fields_to_include = sorted([f for f in fields_to_exclude if ":" not in f])
+    sorted_fields_to_include.extend(sorted([f for f in fields_to_exclude if ":" in f]))
     common_props += "\n".join(common_props_lines)
+    extension_list_comment = "# None" if len(extension_list) == 0 else "\n".join([f"# {e['$id']}" for e in extension_list])
+    fields_to_exclude_comment = "# None" if len(fields_to_exclude) == 0 else "\n".join([f"# {f}" for f in sorted_fields_to_include])
     return query_template.substitute(cqlalchemy_version=__version__,
+                                     extension_list=extension_list_comment,
+                                     ignored_fields_list=fields_to_exclude_comment,
+                                     today_date=datetime.date.today(),
+                                     add_unique_enum=add_unique_enum,
                                      extension_definitions=extension_definitions,
                                      common_attributes=common_props,
                                      common_docs=common_docs_props.rstrip(),

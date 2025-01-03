@@ -1,4 +1,21 @@
-# This file is generated with version 0.0.6 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
+# This file is generated with version 0.0.7 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
+#
+# extensions includes are:
+# https://stac-extensions.github.io/eo/v2.0.0/schema.json#
+# https://stac-extensions.github.io/landsat/v2.0.0/schema.json
+# https://stac-extensions.github.io/mlm/v1.3.0/schema.json
+# https://stac-extensions.github.io/projection/v2.0.0/schema.json
+# https://stac-extensions.github.io/sar/v1.1.0/schema.json
+# https://stac-extensions.github.io/sat/v1.1.0/schema.json
+# https://stac-extensions.github.io/view/v1.0.0/schema.json#
+#
+# ignored fields are:
+# True
+#
+# unique Enum classes generated:
+# True
+#
+# generated on 2025-01-03
 
 from __future__ import annotations
 
@@ -1364,6 +1381,8 @@ class _SatExtension(_Extension):
         number query interface for searching items by the sat:orbit_cycle field where the minimum value is 1. Float input.. Integer input.
     orbit_state : _OrbitStateQuery
         enum query interface for searching items by the sat:orbit_state field
+    orbit_state_vectors : _NullCheck
+        field can be checked to see if sat:orbit_state_vectors is null
     platform_international_designator : _StringQuery
         string query interface for searching items by the sat:platform_international_designator field
     relative_orbit: _NumberQuery
@@ -1375,6 +1394,7 @@ class _SatExtension(_Extension):
         self.anx_datetime = _DateQuery("sat:anx_datetime", query_block)
         self.orbit_cycle = _NumberQuery.init_with_limits("sat:orbit_cycle", query_block, min_value=1, max_value=None, is_int=True)
         self.orbit_state = _OrbitStateQuery.init_enums("sat:orbit_state", query_block, [x.value for x in OrbitState])
+        self.orbit_state_vectors = _NullCheck("sat:orbit_state_vectors", query_block)
         self.platform_international_designator = _StringQuery("sat:platform_international_designator", query_block)
         self.relative_orbit = _NumberQuery.init_with_limits("sat:relative_orbit", query_block, min_value=1, max_value=None, is_int=True)
 

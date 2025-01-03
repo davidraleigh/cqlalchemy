@@ -28,14 +28,43 @@ The `cqlbuild` is an interactive cli that allows for creating your own STAC cql2
 ### Adding extensions
 
 Add various STAC extensions to the builder. Leave blank to move to next step. In the below example we add the view, projection and mlm stac extensions.
+
+#### Add extension schema by extension name
+In some cases the extension schema can be guessed from an extension name
 ```shell
  % cqlbuild
 Enter extensions, either the path to a local file, a url or the extension json-ld name (sar, sat, etc):
-STAC extension, file or url: view
-treating input view like extension json-ld code
-STAC extension, file or url: ./tests/test_data/mlm.schema.json
-STAC extension, file or url: https://stac-extensions.github.io/projection/v2.0.0/schema.json
-STAC extension, file or url:
+STAC extension, raw schema url, local json extension schema file, local list of extensions or urls : view
+treating input view like extension json-ld code and querying https://raw.githubusercontent.com/stac-extensions/view/refs/heads/main/json-schema/schema.json
+STAC extension, raw schema url, local json extension schema file, local list of extensions or urls :
+```
+
+#### Add extension schema with local schema file
+
+```shell
+ % cqlbuild
+Enter extensions, either the path to a local file, a url or the extension json-ld name (sar, sat, etc):
+STAC extension, raw schema url, local json extension schema file, local list of extensions or urls : ./tests/test_data/mlm.schema.json
+STAC extension, raw schema url, local json extension schema file, local list of extensions or urls :
+```
+
+#### Add extension schema by raw schema endpoint
+```shell
+ % cqlbuild
+Enter extensions, either the path to a local file, a url or the extension json-ld name (sar, sat, etc):
+STAC extension, raw schema url, local json extension schema file, local list of extensions or urls : https://stac-extensions.github.io/projection/v2.0.0/schema.json
+STAC extension, raw schema url, local json extension schema file, local list of extensions or urls :
+```
+
+#### Add extension by list of extension names and/or schema http endpoints
+```shell
+ % cqlbuild
+Enter extensions, either the path to a local file, a url or the extension json-ld name (sar, sat, etc):
+STAC extension, raw schema url, local json extension schema file, local list of extensions or urls : tests/test_data/sample_extension_list.txt
+treating input sat like extension json-ld code and querying https://raw.githubusercontent.com/stac-extensions/sat/refs/heads/main/json-schema/schema.json
+treating input sar like extension json-ld code and querying https://raw.githubusercontent.com/stac-extensions/sar/refs/heads/main/json-schema/schema.json
+treating input eo like extension json-ld code and querying https://raw.githubusercontent.com/stac-extensions/eo/refs/heads/main/json-schema/schema.json
+STAC extension, raw schema url, local json extension schema file, local list of extensions or urls :
 ```
 
 ### Omitting fields from the query class interface

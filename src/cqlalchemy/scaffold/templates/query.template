@@ -1,4 +1,15 @@
 # This file is generated with version ${cqlalchemy_version} of cqlalchemy https://github.com/davidraleigh/cqlalchemy
+#
+# extensions includes are:
+${extension_list}
+#
+# ignored fields are:
+${ignored_fields_list}
+#
+# unique Enum classes generated:
+# ${add_unique_enum}
+#
+# generated on ${today_date}
 
 from __future__ import annotations
 
