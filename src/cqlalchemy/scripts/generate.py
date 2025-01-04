@@ -1,6 +1,7 @@
 import json
 import logging
 import pathlib
+from json import JSONDecodeError
 
 import click
 import requests
@@ -8,6 +9,24 @@ import requests
 from cqlalchemy.scaffold.build import build_query_file
 
 logger = logging.getLogger(__name__)
+
+
+def process_extension(extension, extensions):
+    try:
+        if not extension.startswith("http"):
+            if "/" in extension:
+                raise ValueError("path does not exist")
+            ext_temp = extension
+            extension = f"https://raw.githubusercontent.com/stac-extensions/{extension}/refs/heads/main/json-schema/schema.json"
+            logger.warning(f"treating input {ext_temp} like extension json-ld code and querying {extension}")
+        else:
+            logger.warning(f"treating input {extension} like raw schema http endpoint")
+        response = requests.get(extension)
+        response.raise_for_status()
+        extensions[extension] = response.json()
+    except BaseException as be:
+        click.echo(f"{extension} failed with '{be}' exception")
+    return extensions
 
 
 @click.command()
@@ -18,25 +37,29 @@ def build():
 
     click.echo("Enter extensions, either the path to a local file, a url or the extension json-ld name (sar, sat, etc):")
     while True:
-        extension = click.prompt('STAC extension, file or url', default='', show_default=False)
+        extension = click.prompt('STAC extension, raw schema url, local json extension schema file, '
+                                 'local list of extensions or urls', default='', show_default=False)
         if extension == '':
             break
-        try:
-            if pathlib.Path(extension).exists():
-                with pathlib.Path(extension).open() as fp:
-                    extensions[extension] = json.load(fp)
-            else:
-                if not extension.startswith("http"):
-                    if "/" in extension:
-                        raise ValueError("path does not exist")
 
-                    logger.warning(f"treating input {extension} like extension json-ld code")
-                    extension = f"https://raw.githubusercontent.com/stac-extensions/{extension}/refs/heads/main/json-schema/schema.json"
-                response = requests.get(extension)
-                response.raise_for_status()
-                extensions[extension] = response.json()
-        except BaseException as be:
-            click.echo(f"{extension} failed with '{be}' exception")
+        if pathlib.Path(extension).exists():
+            with pathlib.Path(extension).open() as fp:
+                json_type = False
+                try:
+                    extensions[extension] = json.load(fp)
+                    json_type = True
+                except JSONDecodeError as je:
+                    click.echo(f"file {extension} is not formatted as json. attempting as list of extensions {je}")
+                except BaseException as be:
+                    click.echo(f"file {extension} threw {be}")
+            with pathlib.Path(extension).open() as fp:
+                if not json_type:
+                    for line in fp:
+                        if not line.strip():
+                            continue
+                        extensions = process_extension(line.strip(), extensions)
+        else:
+            extensions = process_extension(extension, extensions)
 
     click.echo("Enter stac fields to omit from api or a path with a list of fields to omit:")
     while True:
@@ -47,9 +70,11 @@ def build():
             if pathlib.Path(field).exists():
                 with pathlib.Path(field).open("rt") as f:
                     for line in f.readlines():
+                        click.echo(f"ignoring field {line.strip()}")
                         stac_fields_to_ignore.add(line.strip())
             else:
                 stac_fields_to_ignore.add(field)
+                click.echo(f"ignoring field {field}")
         except BaseException as be:
             click.echo(f"{field} with {be}")
 
@@ -66,7 +91,7 @@ def build():
 
     # Step 3: Create an array using the sorted keys and their corresponding values
     sorted_extensions = [extensions[key] for key in sorted(list(extensions.keys()))]
-
+    sorted_extensions = sorted(sorted_extensions, key=lambda d: d['$id'])
     click.echo(f"Extensions: {[x['title'] for x in sorted_extensions if 'title' in x]}")
     click.echo(f"STAC fields to omit: {stac_fields_to_ignore}")
     query_file_data = build_query_file(sorted_extensions,
