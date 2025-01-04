@@ -1,6 +1,6 @@
 # This file is generated with version 0.0.7 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
 #
-# extensions includes are:
+# extensions included:
 # https://stac-extensions.github.io/eo/v2.0.0/schema.json#
 # https://stac-extensions.github.io/landsat/v2.0.0/schema.json
 # https://stac-extensions.github.io/mlm/v1.3.0/schema.json

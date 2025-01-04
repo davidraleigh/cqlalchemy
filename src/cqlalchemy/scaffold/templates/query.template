@@ -1,6 +1,6 @@
 # This file is generated with version ${cqlalchemy_version} of cqlalchemy https://github.com/davidraleigh/cqlalchemy
 #
-# extensions includes are:
+# extensions included:
 ${extension_list}
 #
 # ignored fields are:

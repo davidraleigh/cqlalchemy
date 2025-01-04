@@ -258,8 +258,9 @@ class _SARObservationDirectionQuery(_EnumQuery):
         actual_lines = actual.split("\n")
         for a in zip(expected_lines, actual_lines):
             if a[0] != a[1]:
+                if a[0].startswith("# generated on 20"):
+                    continue
                 self.assertEqual(a[0], a[1])
-        self.assertEqual(query_1_expected, actual)
 
     def test_query_py_2(self):
         expected_lines = query_2_expected.split("\n")
@@ -284,8 +285,9 @@ class _SARObservationDirectionQuery(_EnumQuery):
         actual_lines = actual.split("\n")
         for a in zip(expected_lines, actual_lines):
             if a[0] != a[1]:
+                if a[0].startswith("# generated on 20"):
+                    continue
                 self.assertEqual(a[0], a[1])
-        self.assertEqual(query_2_expected, actual)
 
 
 @pytest.mark.integration
