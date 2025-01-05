@@ -1,116 +1,113 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://stac-extensions.github.io/sat/v1.0.0/schema.json",
+  "$id": "https://stac-extensions.github.io/sat/v1.1.0/schema.json",
   "title": "Satellite Extension",
   "description": "STAC Sat Extension to a STAC Item.",
+  "type": "object",
+  "required": [
+    "stac_extensions"
+  ],
+  "properties": {
+    "stac_extensions": {
+      "type": "array",
+      "contains": {
+        "const": "https://stac-extensions.github.io/sat/v1.1.0/schema.json"
+      }
+    }
+  },
   "oneOf": [
     {
       "$comment": "This is the schema for STAC Items.",
-      "allOf": [
-        {
-          "type": "object",
-          "required": [
-            "type",
-            "properties",
-            "assets"
-          ],
-          "properties": {
-            "type": {
-              "const": "Feature"
-            },
-            "properties": {
-              "allOf": [
+      "type": "object",
+      "required": [
+        "type",
+        "properties",
+        "assets"
+      ],
+      "properties": {
+        "type": {
+          "const": "Feature"
+        },
+        "properties": {
+          "allOf": [
+            {
+              "anyOf": [
                 {
-                  "anyOf": [
-                    {
-                      "required": [
-                        "sat:platform_international_designator"
-                      ]
-                    },
-                    {
-                      "required": [
-                        "sat:orbit_state"
-                      ]
-                    },
-                    {
-                      "required": [
-                        "sat:absolute_orbit"
-                      ]
-                    },
-                    {
-                      "required": [
-                        "sat:relative_orbit"
-                      ]
-                    },
-                    {
-                      "required": [
-                        "sat:anx_datetime"
-                      ]
-                    }
+                  "required": [
+                    "sat:platform_international_designator"
                   ]
                 },
                 {
-                  "$ref": "#/definitions/fields"
+                  "required": [
+                    "sat:orbit_state"
+                  ]
+                },
+                {
+                  "required": [
+                    "sat:absolute_orbit"
+                  ]
+                },
+                {
+                  "required": [
+                    "sat:relative_orbit"
+                  ]
+                },
+                {
+                  "required": [
+                    "sat:anx_datetime"
+                  ]
+                },
+                {
+                  "required": [
+                    "sat:orbit_cycle"
+                  ]
+                },
+                {
+                  "required": [
+                    "sat:orbit_state_vectors"
+                  ]
                 }
               ]
             },
-            "assets": {
-              "type": "object",
-              "additionalProperties": {
-                "$ref": "#/definitions/fields"
-              }
+            {
+              "$ref": "#/definitions/fields"
             }
-          }
+          ]
         },
-        {
-          "$ref": "#/definitions/stac_extensions"
-        }
-      ]
-    },
-    {
-      "$comment": "This is the schema for STAC Collections.",
-      "allOf": [
-        {
+        "assets": {
           "type": "object",
-          "required": [
-            "type"
-          ],
-          "properties": {
-            "type": {
-              "const": "Collection"
-            },
-            "assets": {
-              "type": "object",
-              "additionalProperties": {
-                "$ref": "#/definitions/fields"
-              }
-            },
-            "item_assets": {
-              "type": "object",
-              "additionalProperties": {
-                "$ref": "#/definitions/fields"
-              }
-            }
-          }
-        }
-      ]
-    }
-  ],
-  "definitions": {
-    "stac_extensions": {
-      "type": "object",
-      "required": [
-        "stac_extensions"
-      ],
-      "properties": {
-        "stac_extensions": {
-          "type": "array",
-          "contains": {
-            "const": "https://stac-extensions.github.io/sat/v1.0.0/schema.json"
+          "additionalProperties": {
+            "$ref": "#/definitions/fields"
           }
         }
       }
     },
+    {
+      "$comment": "This is the schema for STAC Collections.",
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "Collection"
+        },
+        "assets": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/fields"
+          }
+        },
+        "item_assets": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/fields"
+          }
+        }
+      }
+    }
+  ],
+  "definitions": {
     "fields": {
       "type": "object",
       "properties": {
@@ -137,6 +134,25 @@
         "sat:anx_datetime": {
           "type": "string",
           "format": "date-time"
+        },
+        "sat:orbit_cycle": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sat:orbit_state_vectors": {
+          "type": "object",
+          "$comment": "The key is a date-time string, and the value is an array of numbers.",
+          "patternProperties": {
+            "^(\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d:[0-5]\\d\\.\\d+([+-][0-2]\\d:[0-5]\\d|Z))|(\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d:[0-5]\\d([+-][0-2]\\d:[0-5]\\d|Z))|(\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d([+-][0-2]\\d:[0-5]\\d|Z))$": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 6,
+              "maxItems": 9
+            }
+          },
+          "additionalProperties": false
         }
       },
       "patternProperties": {

@@ -1,0 +1,23 @@
+{
+  "extensions": [
+    "sat",
+    "sar",
+    "view"
+  ],
+  "stac_fields_to_ignore": [
+    "constellation",
+    "gsd",
+    "mission",
+    "sar:looks_equivalent_number",
+    "sar:pixel_spacing_azimuth",
+    "sar:pixel_spacing_range",
+    "sat:absolute_orbit",
+    "sat:anx_datetime",
+    "sat:platform_international_designator",
+    "sat:relative_orbit",
+    "view:off_nadir",
+    "view:sun_azimuth",
+    "view:sun_elevation"
+  ],
+  "add_unique_enum": true
+}

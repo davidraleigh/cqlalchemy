@@ -1,0 +1,4 @@
+{
+  "extensions": ["sat", "sar", "eo", "view", "landsat", "mlm", "https://stac-extensions.github.io/projection/v2.0.0/schema.json"],
+  "add_unique_enum": true
+}

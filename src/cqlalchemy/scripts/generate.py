@@ -29,63 +29,95 @@ def process_extension(extension, extensions):
     return extensions
 
 
+def add_extension(extension, extensions):
+    if pathlib.Path(extension).exists():
+        with pathlib.Path(extension).open() as fp:
+            json_type = False
+            try:
+                extensions[extension] = json.load(fp)
+                json_type = True
+            except JSONDecodeError as je:
+                click.echo(f"file {extension} is not formatted as json. attempting as list of extensions {je}")
+            except BaseException as be:
+                click.echo(f"file {extension} threw {be}")
+        with pathlib.Path(extension).open() as fp:
+            if not json_type:
+                for line in fp:
+                    if not line.strip():
+                        continue
+                    extensions = process_extension(line.strip(), extensions)
+    else:
+        extensions = process_extension(extension, extensions)
+
+    return extensions
+
+
 @click.command()
-def build():
+@click.option("--interactive", is_flag=True, default=False, help="Build query class from interactive mode")
+@click.option("--definition", default=None, type=pathlib.Path, help="Path to query meta definition")
+@click.option("--output", default=None, type=pathlib.Path, help="Output file location (only to be paired with --definition)")
+def build(interactive, definition, output):
     """Create a cqlalchemy QueryBuilder class from STAC extensions."""
     extensions = {}
     stac_fields_to_ignore = set()
-
-    click.echo("Enter extensions, either the path to a local file, a url or the extension json-ld name (sar, sat, etc):")
-    while True:
-        extension = click.prompt('STAC extension, raw schema url, local json extension schema file, '
-                                 'local list of extensions or urls', default='', show_default=False)
-        if extension == '':
-            break
-
-        if pathlib.Path(extension).exists():
-            with pathlib.Path(extension).open() as fp:
-                json_type = False
-                try:
-                    extensions[extension] = json.load(fp)
-                    json_type = True
-                except JSONDecodeError as je:
-                    click.echo(f"file {extension} is not formatted as json. attempting as list of extensions {je}")
-                except BaseException as be:
-                    click.echo(f"file {extension} threw {be}")
-            with pathlib.Path(extension).open() as fp:
-                if not json_type:
-                    for line in fp:
-                        if not line.strip():
-                            continue
-                        extensions = process_extension(line.strip(), extensions)
-        else:
-            extensions = process_extension(extension, extensions)
-
-    click.echo("Enter stac fields to omit from api or a path with a list of fields to omit:")
-    while True:
-        field = click.prompt('Field to ignore (or file of fields)', default='', show_default=False)
-        if field == '':
-            break
-        try:
-            if pathlib.Path(field).exists():
-                with pathlib.Path(field).open("rt") as f:
-                    for line in f.readlines():
-                        click.echo(f"ignoring field {line.strip()}")
-                        stac_fields_to_ignore.add(line.strip())
-            else:
-                stac_fields_to_ignore.add(field)
-                click.echo(f"ignoring field {field}")
-        except BaseException as be:
-            click.echo(f"{field} with {be}")
-
-    add_unique_enum = click.prompt('Add unique enum fields for equals operator',
-                                   default=False, type=bool, show_default=True)
     home_dir = pathlib.Path.home()
     default_file_location = home_dir / "query.py"
-    if default_file_location.exists():
+    output_file_location = None
+    if interactive:
+        click.echo("Add extensions to the class, either the path to a local file, a url or the extension json-ld name (sar, sat, etc):")
+        while True:
+            extension = click.prompt('STAC extension name, raw schema url, or local json extension schema file', default='', show_default=False)
+            if extension == '':
+                break
+            extensions = add_extension(extension, extensions)
+
+        click.echo("Enter stac fields to omit from api or a path with a list of fields to omit:")
+        while True:
+            field = click.prompt('Field to ignore', default='', show_default=False)
+            if field == '':
+                break
+            try:
+                if pathlib.Path(field).exists():
+                    with pathlib.Path(field).open("rt") as f:
+                        for line in f.readlines():
+                            click.echo(f"ignoring field {line.strip()}")
+                            stac_fields_to_ignore.add(line.strip())
+                else:
+                    stac_fields_to_ignore.add(field)
+                    click.echo(f"ignoring field {field}")
+            except BaseException as be:
+                click.echo(f"{field} with {be}")
+
+        add_unique_enum = click.prompt('Add unique enum fields for equals operator',
+                                       default=False, type=bool, show_default=True)
+
+    elif definition:
+        if not definition.exists():
+            ctx = click.get_current_context()
+            ctx.fail(f"input {definition} from --definition does not exist")
+        elif not output.parent.exists():
+            ctx = click.get_current_context()
+            ctx.fail(f"output parent directory {output.parent} from --output {output} does not exist")
+        with open(definition) as f:
+            definition_obj = json.load(f)
+        for extension in definition_obj["extensions"]:
+            extensions = add_extension(extension, extensions)
+        if "stac_fields_to_ignore" in definition_obj:
+            for field in definition_obj["stac_fields_to_ignore"]:
+                stac_fields_to_ignore.add(field)
+        if "add_unique_enum" not in definition_obj:
+            add_unique_enum = False
+        else:
+            add_unique_enum = definition_obj["add_unique_enum"]
+        output_file_location = output
+    else:
+        ctx = click.get_current_context()
+        ctx.fail("neither --interactive or --definition options were used")
+
+    if not output_file_location and default_file_location.exists():
         output_file_location = click.prompt('Leave blank to overwrite. Or select a new location to save to',
                                             default=default_file_location, type=pathlib.Path, show_default=True)
-    else:
+    elif not output_file_location:
         output_file_location = click.prompt('Define save location',
                                             default=default_file_location, type=pathlib.Path, show_default=True)
 
