@@ -15,7 +15,7 @@
 # unique Enum classes generated:
 # True
 #
-# generated on 2025-01-04
+# generated on 2025-01-05
 
 from __future__ import annotations
 
@@ -1454,6 +1454,8 @@ class QueryBuilder:
     ----------
     id : _StringQuery
         string query interface for identifier is unique within a Collection
+    collection : _StringQuery
+        string query interface for limiting query by collection(s)
     datetime : _DateQuery
         datetime query interface for searching the datetime of assets
     geometry : _SpatialQuery
