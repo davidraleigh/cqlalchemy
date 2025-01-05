@@ -30,20 +30,23 @@ Either a geojson dict or a shapely geometry can be passed
 
 ```python
 import requests
+from shapely.geometry import shape
+from shapely.validation import make_valid
 from cqlalchemy.stac.query import QueryBuilder
 
 planetary_search = "https://planetarycomputer.microsoft.com/api/stac/v1/search"
-
 # request the geojson footprint of King County, Washington
 url = "http://raw.githubusercontent.com/johan/world.geo.json/master/countries/USA/WA/King.geo.json"
 r = requests.get(url)
 geom_dict = r.json()['features'][0]['geometry']
-
+geom = shape(geom_dict)
+# fix missing vertices
+geom = make_valid(geom)
 q = QueryBuilder()
 # planetary computer requires defining the constellation
 q.collection.equals("landsat-c2-l2")
 # define the spatial intersection
-q.geometry.intersects(geom_dict)
+q.geometry.intersects(geom)
 response = requests.post(planetary_search, q.query_dump_json(limit=2))
 for feature in response.json()["features"]:
     print(feature["properties"]["datetime"])
