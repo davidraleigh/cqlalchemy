@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    "sat",
+    "sar",
+    "eo",
+    "view",
+    "landsat",
+    "./tests/test_data/mlm.schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+  ],
+  "stac_fields_to_ignore": [
+    "view:sun_azimuth",
+    "view:sun_elevation",
+    "constellation"
+  ]
+}

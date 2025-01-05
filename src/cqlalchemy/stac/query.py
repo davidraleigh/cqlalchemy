@@ -1,4 +1,4 @@
-# This file is generated with version 0.0.7 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
+# This file is generated with version 0.0.9 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
 #
 # extensions included:
 # https://stac-extensions.github.io/eo/v2.0.0/schema.json#
@@ -10,12 +10,12 @@
 # https://stac-extensions.github.io/view/v1.0.0/schema.json#
 #
 # ignored fields are:
-# True
+# None
 #
 # unique Enum classes generated:
 # True
 #
-# generated on 2025-01-03
+# generated on 2025-01-04
 
 from __future__ import annotations
 
@@ -329,10 +329,10 @@ class _StringQuery(_BaseString):
 
     def like(self, value: str) -> QueryBuilder:
         """
-        for the value input, create an like query for this field. Requires using the '%' operator within the value string for wildcard checking
+        for the value input, create a like query for this field. Requires using the '%' operator within the value string for wildcard checking
 
         Args:
-            value (str): for the value input, create an like query for this field.
+            value (str): for the value input, create a like query for this field.
 
         Returns:
             QueryBuilder: query builder for additional queries to add
