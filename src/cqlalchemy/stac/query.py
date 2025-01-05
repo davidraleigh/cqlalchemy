@@ -1,4 +1,4 @@
-# This file is generated with version 0.0.9 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
+# This file is generated with version 0.0.10 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
 #
 # extensions included:
 # https://stac-extensions.github.io/eo/v2.0.0/schema.json#
@@ -15,7 +15,7 @@
 # unique Enum classes generated:
 # True
 #
-# generated on 2025-01-04
+# generated on 2025-01-05
 
 from __future__ import annotations
 
@@ -24,8 +24,10 @@ import math
 from datetime import date, datetime, timedelta, timezone
 from enum import Enum
 from json import JSONEncoder
-from typing import Optional
+from typing import Optional, Union
 
+import shapely
+from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 
 
@@ -590,8 +592,23 @@ class _SpatialQuery(_QueryBase):
     _geometry = None
     _is_null = None
 
-    def intersects(self, geometry: BaseGeometry) -> QueryBuilder:
-        self._geometry = geometry
+    def intersects(self, geometry: Union[BaseGeometry, dict]) -> QueryBuilder:
+        if isinstance(geometry, BaseGeometry):
+            self._geometry = geometry.__geo_interface__
+        elif isinstance(geometry, dict):
+            # check to make sure geometry is correctly formatted
+            try:
+                # check for polygons that aren't closed
+                shapely.from_geojson(json.dumps(geometry))
+            except shapely.GEOSException as ge:
+                if "Expected two coordinates found more than two" not in str(ge):
+                    raise
+                else:
+                    # check for geometries with x, y, and z defined
+                    shape(geometry)
+            self._geometry = geometry
+        else:
+            raise ValueError("input must be shapely geometry or a geojson formatted dictionary")
         self._is_null = None
         return self._parent_obj
 
@@ -619,7 +636,7 @@ class _SpatialQuery(_QueryBase):
             "op": "s_intersects",
             "args": [
                 self.property_obj,
-                self._geometry.__geo_interface__
+                self._geometry
             ]
         }
 
@@ -1437,6 +1454,8 @@ class QueryBuilder:
     ----------
     id : _StringQuery
         string query interface for identifier is unique within a Collection
+    collection : _StringQuery
+        string query interface for limiting query by collection(s)
     datetime : _DateQuery
         datetime query interface for searching the datetime of assets
     geometry : _SpatialQuery
@@ -1464,6 +1483,7 @@ class QueryBuilder:
     def __init__(self):
         self._filter_expressions: list[_QueryTuple] = []
         self.id = _StringQuery("id", self)
+        self.collection = _StringQuery("collection", self)
         self.datetime = _DateQuery("datetime", self)
         self.geometry = _SpatialQuery("geometry", self)
         self.created = _DateQuery("created", self)

@@ -21,6 +21,181 @@ This project provides two different functionalities. One is the `cqlalchemy.stac
 
 The other functionality is a script that allows the user to build their own `QueryBuilder` class from extensions of their choosing, and allowing the opportunity to restrict the fields that can be queried (in the case where it isn't a required field and it's existence in the class might mislead the user).
 
+## cqlalchemy QueryBuilder
+
+### query by spatial extent
+Either a geojson dict or a shapely geometry can be passed
+
+<details><summary>Expand Python Code Sample</summary>
+
+```python
+import requests
+from shapely.geometry import shape
+from shapely.validation import make_valid
+from cqlalchemy.stac.query import QueryBuilder
+
+planetary_search = "https://planetarycomputer.microsoft.com/api/stac/v1/search"
+# request the geojson footprint of King County, Washington
+url = "http://raw.githubusercontent.com/johan/world.geo.json/master/countries/USA/WA/King.geo.json"
+r = requests.get(url)
+geom_dict = r.json()['features'][0]['geometry']
+geom = shape(geom_dict)
+# fix missing vertices
+geom = make_valid(geom)
+q = QueryBuilder()
+# planetary computer requires defining the constellation
+q.collection.equals("landsat-c2-l2")
+# define the spatial intersection
+q.geometry.intersects(geom)
+response = requests.post(planetary_search, q.query_dump_json(limit=2))
+for feature in response.json()["features"]:
+    print(feature["properties"]["datetime"])
+    print(feature["properties"]["eo:cloud_cover"])
+    print(feature["geometry"])
+```
+
+</details>
+
+### query by date
+querying using a python `date` object will query the 24 hour period of that day
+
+<details><summary>Expand Python Code Sample</summary>
+
+```python
+import requests
+from datetime import date
+from cqlalchemy.stac.query import QueryBuilder
+
+q = QueryBuilder()
+# planetary computer requires defining the constellation
+q.collection.equals("landsat-c2-l2")
+# search entire utc 24 hour period for December 1st, 2023
+q.datetime.equals(date(2023, 12, 1))
+planetary_search = "https://planetarycomputer.microsoft.com/api/stac/v1/search"
+response = requests.post(planetary_search, q.query_dump_json(limit=2))
+for feature in response.json()["features"]:
+    print(feature["properties"]["datetime"])
+```
+</details>
+
+results in
+```shell
+2023-12-01T23:59:27.570403Z
+2023-12-01T23:59:03.607352Z
+```
+### query using an extension
+We'll utilize the above query and request data from that date that's less than 30 percent cloud cover by using the Electro-Optical cloud cover field
+
+<details><summary>Expand Python Code Sample</summary>
+
+```python
+import requests
+from datetime import date
+from cqlalchemy.stac.query import QueryBuilder
+
+q = QueryBuilder()
+# planetary computer requires defining the constellation
+q.collection.equals("landsat-c2-l2")
+# search entire utc 24 hour period for December 1st, 2023
+q.datetime.equals(date(2023, 12, 1))
+# either use the lt or lte methods
+q.eo.cloud_cover.lt(30)
+
+planetary_search = "https://planetarycomputer.microsoft.com/api/stac/v1/search"
+response = requests.post(planetary_search, q.query_dump_json(limit=2))
+for feature in response.json()["features"]:
+    print(feature["properties"]["datetime"])
+    print(feature["properties"]["eo:cloud_cover"])
+```
+</details>
+
+```shell
+2023-12-01T23:56:15.912583Z
+21.82
+2023-12-01T23:54:16.177807Z
+28.06
+```
+
+We continue to expand on the above extension utilizing the Landsat extension `cloud_cover_land` field.
+
+<details><summary>Expand Python Code Sample</summary>
+
+```python
+import requests
+from datetime import date
+from cqlalchemy.stac.query import QueryBuilder
+
+q = QueryBuilder()
+# planetary computer requires defining the constellation
+q.collection.equals("landsat-c2-l2")
+# search entire utc 24 hour period for December 1st, 2023
+q.datetime.equals(date(2023, 12, 1))
+# either use the lt or lte methods
+q.eo.cloud_cover.lt(30)
+
+q.landsat.cloud_cover_land.lt(20)
+
+planetary_search = "https://planetarycomputer.microsoft.com/api/stac/v1/search"
+response = requests.post(planetary_search, q.query_dump_json(limit=2))
+for feature in response.json()["features"]:
+    print(feature["properties"]["datetime"])
+    print(feature["properties"]["eo:cloud_cover"])
+    print(feature["properties"]["landsat:cloud_cover_land"])
+```
+</details>
+
+The results reveal that some data may not have the cloud_cover_land field defined (this might be that they're not coastal data).
+```shell
+2023-12-01T23:52:40.414555Z
+8.28
+-1.0
+2023-12-01T23:52:16.472683Z
+5.39
+-1.0
+```
+
+We can try again by forcing our search to be gt -1 and lt 20:
+
+<details><summary>Expand Python Code Sample</summary>
+
+```python
+import requests
+from datetime import date
+from cqlalchemy.stac.query import QueryBuilder
+
+q = QueryBuilder()
+# planetary computer requires defining the constellation
+q.collection.equals("landsat-c2-l2")
+# search entire utc 24 hour period for December 1st, 2023
+q.datetime.equals(date(2023, 12, 1))
+# either use the lt or lte methods
+q.eo.cloud_cover.lt(30)
+
+q.landsat.cloud_cover_land.lt(20)
+q.landsat.cloud_cover_land.gt(-1)
+
+planetary_search = "https://planetarycomputer.microsoft.com/api/stac/v1/search"
+response = requests.post(planetary_search, q.query_dump_json(limit=2))
+for feature in response.json()["features"]:
+    print(feature["properties"]["datetime"])
+    print(feature["properties"]["eo:cloud_cover"])
+    print(feature["properties"]["landsat:cloud_cover_land"])
+    print(feature["properties"]["platform"])
+```
+</details>
+
+Now we're getting low land and overall cloud cover values. But it's only landsat-7. We can keep restricting the query by using the `q.platform.equals` query.
+```shell
+2023-12-01T23:32:54.374649Z
+2.0
+2.0
+landsat-7
+2023-12-01T23:32:30.478026Z
+0.0
+0.0
+landsat-7
+```
+
 ## cqlbuild
 
 The `cqlbuild` is an interactive cli that allows for creating your own STAC cql2 query class.
