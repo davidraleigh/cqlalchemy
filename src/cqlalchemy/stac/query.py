@@ -1,6 +1,6 @@
 # This file is generated with version 0.0.7 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
 #
-# extensions includes are:
+# extensions included:
 # https://stac-extensions.github.io/eo/v2.0.0/schema.json#
 # https://stac-extensions.github.io/landsat/v2.0.0/schema.json
 # https://stac-extensions.github.io/mlm/v1.3.0/schema.json
@@ -310,7 +310,7 @@ class _StringQuery(_BaseString):
             QueryBuilder: query builder for additional queries to add
         """
         self._clear_values()
-        self._eq_value = value
+        self._eq_value = str(value)
         return self._parent_obj
 
     def in_set(self, values: list[str]) -> QueryBuilder:
@@ -324,7 +324,7 @@ class _StringQuery(_BaseString):
             QueryBuilder: query builder for additional queries to add
         """
         self._clear_values()
-        self._in_values = values
+        self._in_values = [str(x) for x in values]
         return self._parent_obj
 
     def like(self, value: str) -> QueryBuilder:

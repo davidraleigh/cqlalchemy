@@ -1,6 +1,6 @@
 # This file is generated with version 0.0.7 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
 #
-# extensions includes are:
+# extensions included:
 # https://stac-extensions.github.io/eo/v2.0.0/schema.json#
 # https://stac-extensions.github.io/sar/v1.0.0/schema.json
 # https://stac-extensions.github.io/view/v1.0.0/schema.json#
@@ -307,7 +307,7 @@ class _StringQuery(_BaseString):
             QueryBuilder: query builder for additional queries to add
         """
         self._clear_values()
-        self._eq_value = value
+        self._eq_value = str(value)
         return self._parent_obj
 
     def in_set(self, values: list[str]) -> QueryBuilder:
@@ -321,15 +321,15 @@ class _StringQuery(_BaseString):
             QueryBuilder: query builder for additional queries to add
         """
         self._clear_values()
-        self._in_values = values
+        self._in_values = [str(x) for x in values]
         return self._parent_obj
 
     def like(self, value: str) -> QueryBuilder:
         """
-        for the value input, create an like query for this field. Requires using the '%' operator within the value string for wildcard checking
+        for the value input, create a like query for this field. Requires using the '%' operator within the value string for wildcard checking
 
         Args:
-            value (str): for the value input, create an like query for this field.
+            value (str): for the value input, create a like query for this field.
 
         Returns:
             QueryBuilder: query builder for additional queries to add
