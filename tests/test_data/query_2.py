@@ -1,9 +1,9 @@
 # This file is generated with version 0.0.9 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
 #
 # extensions included:
-# https://stac-extensions.github.io/sar/v1.0.0/schema.json
+# https://stac-extensions.github.io/sar/v1.1.0/schema.json
+# https://stac-extensions.github.io/sat/v1.1.0/schema.json
 # https://stac-extensions.github.io/view/v1.0.0/schema.json#
-# https://stac-extensions.github.io/sat/v1.0.0/schema.json
 #
 # ignored fields are:
 # constellation
@@ -23,7 +23,7 @@
 # unique Enum classes generated:
 # True
 #
-# generated on 2025-01-03
+# generated on 2025-01-04
 
 from __future__ import annotations
 
@@ -795,25 +795,6 @@ class _SARExtension(_Extension):
         self.resolution_range = _NumberQuery.init_with_limits("sar:resolution_range", query_block, min_value=0, max_value=None, is_int=False)
 
 
-class _ViewExtension(_Extension):
-    """
-    STAC View Geometry Extension for STAC Items and STAC Collections.
-
-    ...
-
-    Attributes
-    ----------
-    azimuth: _NumberQuery
-        number query interface for searching items by the view:azimuth field where the minimum value is 0 and the max value is 360. Float input.
-    incidence_angle: _NumberQuery
-        number query interface for searching items by the view:incidence_angle field where the minimum value is 0 and the max value is 90. Float input.
-    """
-    def __init__(self, query_block: QueryBuilder):
-        super().__init__(query_block)
-        self.azimuth = _NumberQuery.init_with_limits("view:azimuth", query_block, min_value=0, max_value=360, is_int=False)
-        self.incidence_angle = _NumberQuery.init_with_limits("view:incidence_angle", query_block, min_value=0, max_value=90, is_int=False)
-
-
 class OrbitState(str, Enum):
     """
     Orbit State Enum
@@ -865,12 +846,37 @@ class _SatExtension(_Extension):
 
     Attributes
     ----------
+    orbit_cycle: _NumberQuery
+        number query interface for searching items by the sat:orbit_cycle field where the minimum value is 1. Float input.. Integer input.
     orbit_state : _OrbitStateQuery
         enum query interface for searching items by the sat:orbit_state field
+    orbit_state_vectors : _NullCheck
+        field can be checked to see if sat:orbit_state_vectors is null
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
+        self.orbit_cycle = _NumberQuery.init_with_limits("sat:orbit_cycle", query_block, min_value=1, max_value=None, is_int=True)
         self.orbit_state = _OrbitStateQuery.init_enums("sat:orbit_state", query_block, [x.value for x in OrbitState])
+        self.orbit_state_vectors = _NullCheck("sat:orbit_state_vectors", query_block)
+
+
+class _ViewExtension(_Extension):
+    """
+    STAC View Geometry Extension for STAC Items and STAC Collections.
+
+    ...
+
+    Attributes
+    ----------
+    azimuth: _NumberQuery
+        number query interface for searching items by the view:azimuth field where the minimum value is 0 and the max value is 360. Float input.
+    incidence_angle: _NumberQuery
+        number query interface for searching items by the view:incidence_angle field where the minimum value is 0 and the max value is 90. Float input.
+    """
+    def __init__(self, query_block: QueryBuilder):
+        super().__init__(query_block)
+        self.azimuth = _NumberQuery.init_with_limits("view:azimuth", query_block, min_value=0, max_value=360, is_int=False)
+        self.incidence_angle = _NumberQuery.init_with_limits("view:incidence_angle", query_block, min_value=0, max_value=90, is_int=False)
 
 
 class QueryBuilder:
@@ -912,8 +918,8 @@ class QueryBuilder:
         self.end_datetime = _DateQuery("end_datetime", self)
         self.platform = _StringQuery("platform", self)
         self.sar = _SARExtension(self)
-        self.view = _ViewExtension(self)
         self.sat = _SatExtension(self)
+        self.view = _ViewExtension(self)
 
     def query_dump(self, top_level_is_or=False, limit: Optional[int] = None):
         properties = list(vars(self).values())

@@ -2,9 +2,9 @@
 #
 # extensions included:
 # https://stac-extensions.github.io/eo/v2.0.0/schema.json#
-# https://stac-extensions.github.io/sar/v1.0.0/schema.json
+# https://stac-extensions.github.io/sar/v1.1.0/schema.json
+# https://stac-extensions.github.io/sat/v1.1.0/schema.json
 # https://stac-extensions.github.io/view/v1.0.0/schema.json#
-# https://stac-extensions.github.io/sat/v1.0.0/schema.json
 #
 # ignored fields are:
 # None
@@ -12,7 +12,7 @@
 # unique Enum classes generated:
 # False
 #
-# generated on 2025-01-03
+# generated on 2025-01-04
 
 from __future__ import annotations
 
@@ -845,34 +845,6 @@ class _SARExtension(_Extension):
         self.resolution_range = _NumberQuery.init_with_limits("sar:resolution_range", query_block, min_value=0, max_value=None, is_int=False)
 
 
-class _ViewExtension(_Extension):
-    """
-    STAC View Geometry Extension for STAC Items and STAC Collections.
-
-    ...
-
-    Attributes
-    ----------
-    azimuth: _NumberQuery
-        number query interface for searching items by the view:azimuth field where the minimum value is 0 and the max value is 360. Float input.
-    incidence_angle: _NumberQuery
-        number query interface for searching items by the view:incidence_angle field where the minimum value is 0 and the max value is 90. Float input.
-    off_nadir: _NumberQuery
-        number query interface for searching items by the view:off_nadir field where the minimum value is 0 and the max value is 90. Float input.
-    sun_azimuth: _NumberQuery
-        number query interface for searching items by the view:sun_azimuth field where the minimum value is 0 and the max value is 360. Float input.
-    sun_elevation: _NumberQuery
-        number query interface for searching items by the view:sun_elevation field where the minimum value is -90 and the max value is 90. Float input.
-    """
-    def __init__(self, query_block: QueryBuilder):
-        super().__init__(query_block)
-        self.azimuth = _NumberQuery.init_with_limits("view:azimuth", query_block, min_value=0, max_value=360, is_int=False)
-        self.incidence_angle = _NumberQuery.init_with_limits("view:incidence_angle", query_block, min_value=0, max_value=90, is_int=False)
-        self.off_nadir = _NumberQuery.init_with_limits("view:off_nadir", query_block, min_value=0, max_value=90, is_int=False)
-        self.sun_azimuth = _NumberQuery.init_with_limits("view:sun_azimuth", query_block, min_value=0, max_value=360, is_int=False)
-        self.sun_elevation = _NumberQuery.init_with_limits("view:sun_elevation", query_block, min_value=-90, max_value=90, is_int=False)
-
-
 class OrbitState(str, Enum):
     """
     Orbit State Enum
@@ -919,8 +891,12 @@ class _SatExtension(_Extension):
         number query interface for searching items by the sat:absolute_orbit field where the minimum value is 1. Float input.. Integer input.
     anx_datetime : _DateQuery
         datetime query interface for searching items by the sat:anx_datetime field
+    orbit_cycle: _NumberQuery
+        number query interface for searching items by the sat:orbit_cycle field where the minimum value is 1. Float input.. Integer input.
     orbit_state : _OrbitStateQuery
         enum query interface for searching items by the sat:orbit_state field
+    orbit_state_vectors : _NullCheck
+        field can be checked to see if sat:orbit_state_vectors is null
     platform_international_designator : _StringQuery
         string query interface for searching items by the sat:platform_international_designator field
     relative_orbit: _NumberQuery
@@ -930,9 +906,39 @@ class _SatExtension(_Extension):
         super().__init__(query_block)
         self.absolute_orbit = _NumberQuery.init_with_limits("sat:absolute_orbit", query_block, min_value=1, max_value=None, is_int=True)
         self.anx_datetime = _DateQuery("sat:anx_datetime", query_block)
+        self.orbit_cycle = _NumberQuery.init_with_limits("sat:orbit_cycle", query_block, min_value=1, max_value=None, is_int=True)
         self.orbit_state = _OrbitStateQuery.init_enums("sat:orbit_state", query_block, [x.value for x in OrbitState])
+        self.orbit_state_vectors = _NullCheck("sat:orbit_state_vectors", query_block)
         self.platform_international_designator = _StringQuery("sat:platform_international_designator", query_block)
         self.relative_orbit = _NumberQuery.init_with_limits("sat:relative_orbit", query_block, min_value=1, max_value=None, is_int=True)
+
+
+class _ViewExtension(_Extension):
+    """
+    STAC View Geometry Extension for STAC Items and STAC Collections.
+
+    ...
+
+    Attributes
+    ----------
+    azimuth: _NumberQuery
+        number query interface for searching items by the view:azimuth field where the minimum value is 0 and the max value is 360. Float input.
+    incidence_angle: _NumberQuery
+        number query interface for searching items by the view:incidence_angle field where the minimum value is 0 and the max value is 90. Float input.
+    off_nadir: _NumberQuery
+        number query interface for searching items by the view:off_nadir field where the minimum value is 0 and the max value is 90. Float input.
+    sun_azimuth: _NumberQuery
+        number query interface for searching items by the view:sun_azimuth field where the minimum value is 0 and the max value is 360. Float input.
+    sun_elevation: _NumberQuery
+        number query interface for searching items by the view:sun_elevation field where the minimum value is -90 and the max value is 90. Float input.
+    """
+    def __init__(self, query_block: QueryBuilder):
+        super().__init__(query_block)
+        self.azimuth = _NumberQuery.init_with_limits("view:azimuth", query_block, min_value=0, max_value=360, is_int=False)
+        self.incidence_angle = _NumberQuery.init_with_limits("view:incidence_angle", query_block, min_value=0, max_value=90, is_int=False)
+        self.off_nadir = _NumberQuery.init_with_limits("view:off_nadir", query_block, min_value=0, max_value=90, is_int=False)
+        self.sun_azimuth = _NumberQuery.init_with_limits("view:sun_azimuth", query_block, min_value=0, max_value=360, is_int=False)
+        self.sun_elevation = _NumberQuery.init_with_limits("view:sun_elevation", query_block, min_value=-90, max_value=90, is_int=False)
 
 
 class QueryBuilder:
@@ -984,8 +990,8 @@ class QueryBuilder:
         self.gsd = _NumberQuery.init_with_limits("gsd", self, min_value=0)
         self.eo = _EOExtension(self)
         self.sar = _SARExtension(self)
-        self.view = _ViewExtension(self)
         self.sat = _SatExtension(self)
+        self.view = _ViewExtension(self)
 
     def query_dump(self, top_level_is_or=False, limit: Optional[int] = None):
         properties = list(vars(self).values())

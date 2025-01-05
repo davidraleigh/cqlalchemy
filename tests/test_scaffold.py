@@ -254,7 +254,7 @@ class _SARObservationDirectionQuery(_EnumQuery):
 
     def test_query_py_1(self):
         expected_lines = query_1_expected.split("\n")
-        actual = build_query_file([eo_definition, sar_definition, view_definition, sat_definition])
+        actual = build_query_file([eo_definition, sar_definition, sat_definition, view_definition])
         actual_lines = actual.split("\n")
         for a in zip(expected_lines, actual_lines):
             if a[0] != a[1]:
@@ -279,7 +279,7 @@ class _SARObservationDirectionQuery(_EnumQuery):
                              "sar:pixel_spacing_range",
                              ]
         actual = build_query_file(
-            [sar_definition, view_definition, sat_definition],
+            [sar_definition, sat_definition, view_definition],
             fields_to_exclude=fields_to_exclude,
             add_unique_enum=True)
         actual_lines = actual.split("\n")
