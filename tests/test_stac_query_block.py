@@ -417,28 +417,27 @@ class STACTestCase(unittest.TestCase):
 
     def test_filter_or(self):
         # TODO document this user error
-        q2 = QueryBuilder()
-        bpassed = False
+        a = QueryBuilder()
+        raised_error = False
         try:
-            q2.filter((q2.view.azimuth > 9) | (q2.sar.observation_direction.left()))
+            a.filter((a.view.azimuth > 9) | (a.sar.observation_direction.left()))
         except AttributeError:
-            bpassed = True
-        assert bpassed
-
-    def test_filter_or_2(self):
-        q2 = QueryBuilder()
-        bpassed = True
-        try:
-            q2.filter((q2.view.azimuth > 9) | (q2.sar.observation_direction == ObservationDirection.left))
-        except AttributeError:
-            bpassed = False
-        assert bpassed
+            raised_error = True
+        self.assertTrue(raised_error)
 
     def test_filter_enum_serializable(self):
         a = QueryBuilder()
         a.filter((a.view.azimuth > 9) | (a.sar.observation_direction == ObservationDirection.left))
+        a_dict = a.query_dump()
         json.dumps(a.query_dump())
         self.assertIsNotNone(a.query_dump_json())
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "or")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][0]["property"], "view:azimuth")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][1], 9)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][0]["property"], "sar:observation_direction")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1], ObservationDirection.left)
 
     def test_boolean(self):
         a = QueryBuilder()
@@ -596,6 +595,21 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["op"], "=")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "id")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1], str(input_id))
+
+    def test_uuids(self):
+        input_id_1 = uuid.uuid4()
+        input_id_2 = uuid.uuid4()
+        a = QueryBuilder()
+        a.id.in_set([input_id_1, input_id_2])
+        a_dict = a.query_dump()
+        a_json = a.query_dump_json()
+        self.assertIn(str(input_id_1), a_json)
+        self.assertIn(str(input_id_2), a_json)
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "in")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "id")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], [str(input_id_1), str(input_id_2)])
 
 
 if __name__ == '__main__':
