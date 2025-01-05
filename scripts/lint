@@ -3,3 +3,4 @@
 set -e
 
 poetry run ruff check src
+poetry run ruff check tests
