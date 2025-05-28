@@ -28,6 +28,11 @@ class _AcceleratorQuery(_EnumQuery):
         self._eq_value = value.value
         return self._parent_obj
 
+    def not_equals(self, value: Accelerator) -> QueryBuilder:
+        self._check([value.value])
+        self._ne_value = value.value
+        return self._parent_obj
+
     def in_set(self, values: list[Accelerator]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
@@ -76,6 +81,11 @@ class _FrameworkQuery(_EnumQuery):
     def equals(self, value: Framework) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
+        return self._parent_obj
+
+    def not_equals(self, value: Framework) -> QueryBuilder:
+        self._check([value.value])
+        self._ne_value = value.value
         return self._parent_obj
 
     def in_set(self, values: list[Framework]) -> QueryBuilder:

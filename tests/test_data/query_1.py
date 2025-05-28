@@ -123,6 +123,10 @@ class _QueryBase:
         # TODO, check for None and implement an is null
         return _QueryTuple(self, "=", other)
 
+    def __ne__(self, other):
+        # TODO, check for None and implement an is null
+        return _QueryTuple(self, "!=", other)
+
     def __gt__(self, other):
         self._greater_check(other)
         return _QueryTuple(self, ">", other)
@@ -228,6 +232,7 @@ class _NullCheck(_QueryBase):
 
 class _BaseString(_QueryBase):
     _eq_value = None
+    _ne_value = None
     _in_values = None
     _not_in_values = None
     _like_value = None
@@ -236,6 +241,7 @@ class _BaseString(_QueryBase):
     def _clear_values(self):
         self._is_null = None
         self._eq_value = None
+        self._ne_value = None
         self._in_values = None
         self._not_in_values = None
         self._like_value = None
@@ -256,6 +262,11 @@ class _BaseString(_QueryBase):
             return {
                 "op": "=",
                 "args": [self.property_obj, self._eq_value]
+            }
+        elif self._ne_value is not None:
+            return {
+                "op": "!=",
+                "args": [self.property_obj, self._ne_value]
             }
         elif self._in_values is not None and len(self._in_values) > 0:
             return {
@@ -326,6 +337,20 @@ class _StringQuery(_BaseString):
         self._eq_value = str(value)
         return self._parent_obj
 
+    def not_equals(self, value: str) -> QueryBuilder:
+        """
+        for the field, query for all items where it's string value does not equal this input
+
+        Args:
+            value (str): non-equality check for the field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
+        self._clear_values()
+        self._ne_value = str(value)
+        return self._parent_obj
+
     def in_set(self, values: list[str]) -> QueryBuilder:
         """
         for the values input, create an in_set query for this field
@@ -372,6 +397,7 @@ class _StringQuery(_BaseString):
         self._in_values = None
         self._not_in_values = None
         self._eq_value = None
+        self._ne_value = None
         self._like_value = None
 
 
@@ -381,6 +407,7 @@ class _Query(_QueryBase):
     _lt_value = None
     _lt_operand = None
     _eq_value = None
+    _ne_value = None
     _is_null = None
 
     def _build_query(self):
@@ -394,7 +421,7 @@ class _Query(_QueryBase):
                 "op": "isNull",
                 "args": [self.property_obj]
             }
-        elif self._gt_value is None and self._lt_value is None:
+        elif self._gt_value is None and self._lt_value is None and self._ne_value is None:
             return None
 
         gt_query = {
@@ -405,24 +432,56 @@ class _Query(_QueryBase):
             "op": self._lt_operand,
             "args": [self.property_obj, self._lt_value]
         }
+        ne_query = {
+            "op": "!=",
+            "args": [self.property_obj, self._ne_value]
+        }
+        range_query = None
         if self._gt_value is not None and self._lt_value is None:
-            return gt_query
+            if self._ne_value is None:
+                return gt_query
+            range_query = {
+                "op": "and",
+                "args": [
+                    gt_query
+                ]
+            }
         elif self._lt_value is not None and self._gt_value is None:
-            return lt_query
+            if self._ne_value is None:
+                return lt_query
+            range_query = {
+                "op": "and",
+                "args": [
+                    lt_query
+                ]
+            }
         elif self._gt_value is not None and self._lt_value is not None and self._gt_value < self._lt_value:
-            return {
+            range_query = {
                 "op": "and",
                 "args": [
                     gt_query, lt_query
                 ]
             }
-        elif self._gt_value is not None and self._lt_value is not None and self._gt_value > self._lt_value:
-            return {
+        if range_query is not None:
+            if self._ne_value is not None:
+                range_query["args"].append(ne_query)
+            return range_query
+
+        if self._gt_value is not None and self._lt_value is not None and self._gt_value > self._lt_value:
+            range_query = {
                 "op": "or",
                 "args": [
                     gt_query, lt_query
                 ]
             }
+            if self._ne_value is not None:
+                range_query = {
+                    "op": "and",
+                    "args": [
+                        range_query, ne_query
+                    ]
+                }
+        return range_query
 
     def equals(self, value) -> QueryBuilder:
         """
@@ -437,6 +496,22 @@ class _Query(_QueryBase):
         self._check(value)
         self._clear_values()
         self._eq_value = value
+        return self._parent_obj
+
+    def not_equals(self, value) -> QueryBuilder:
+        """
+        for the field, query for all items where it's value does not equal this input
+
+        Args:
+            value: inequality check for the field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
+        self._check(value)
+        self._eq_value = None
+        self._is_null = None
+        self._ne_value = value
         return self._parent_obj
 
     def gt(self, value) -> QueryBuilder:
@@ -528,6 +603,7 @@ class _Query(_QueryBase):
         self._lt_value = None
         self._lt_operand = None
         self._eq_value = None
+        self._ne_value = None
         self._is_null = None
 
 
@@ -554,6 +630,31 @@ class _DateQuery(_Query):
             self._lt_operand = "<="
         else:
             self._eq_value = value
+
+        return self._parent_obj
+
+    def not_equals(self, value: date, tzinfo=timezone.utc) -> QueryBuilder:
+        """
+        for the field, query for all items where it's date equals this input
+
+        Args:
+            value: equality check for the field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
+        self._check(value)
+        if isinstance(value, datetime):
+            self._ne_value = value
+        elif isinstance(value, date):
+            start = datetime.combine(value, datetime.min.time(), tzinfo=tzinfo)
+            end = datetime.combine(value, datetime.max.time(), tzinfo=tzinfo)
+            self._gt_value = end
+            self._gt_operand = ">="
+            self._lt_value = start
+            self._lt_operand = "<="
+        else:
+            self._ne_value = value
 
         return self._parent_obj
 
@@ -726,6 +827,11 @@ class _CommonNameQuery(_EnumQuery):
         self._eq_value = value.value
         return self._parent_obj
 
+    def not_equals(self, value: CommonName) -> QueryBuilder:
+        self._check([value.value])
+        self._ne_value = value.value
+        return self._parent_obj
+
     def in_set(self, values: list[CommonName]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
@@ -802,6 +908,11 @@ class _FrequencyBandQuery(_EnumQuery):
         self._eq_value = value.value
         return self._parent_obj
 
+    def not_equals(self, value: FrequencyBand) -> QueryBuilder:
+        self._check([value.value])
+        self._ne_value = value.value
+        return self._parent_obj
+
     def in_set(self, values: list[FrequencyBand]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
@@ -839,6 +950,11 @@ class _ObservationDirectionQuery(_EnumQuery):
     def equals(self, value: ObservationDirection) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
+        return self._parent_obj
+
+    def not_equals(self, value: ObservationDirection) -> QueryBuilder:
+        self._check([value.value])
+        self._ne_value = value.value
         return self._parent_obj
 
     def in_set(self, values: list[ObservationDirection]) -> QueryBuilder:
@@ -934,6 +1050,11 @@ class _OrbitStateQuery(_EnumQuery):
     def equals(self, value: OrbitState) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
+        return self._parent_obj
+
+    def not_equals(self, value: OrbitState) -> QueryBuilder:
+        self._check([value.value])
+        self._ne_value = value.value
         return self._parent_obj
 
     def in_set(self, values: list[OrbitState]) -> QueryBuilder:
