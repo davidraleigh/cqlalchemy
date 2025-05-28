@@ -26,7 +26,7 @@ The other functionality is a script that allows the user to build their own `Que
 ### query by spatial extent
 Either a geojson dict or a shapely geometry can be passed
 
-<details><summary>Expand Python Code Sample</summary>
+<details><summary>Expand Spatial Query Sample</summary>
 
 ```python
 import requests
@@ -43,7 +43,7 @@ geom = shape(geom_dict)
 # fix missing vertices
 geom = make_valid(geom)
 q = QueryBuilder()
-# planetary computer requires defining the constellation
+# planetary computer requires defining the collection
 q.collection.equals("landsat-c2-l2")
 # define the spatial intersection
 q.geometry.intersects(geom)
@@ -59,7 +59,7 @@ for feature in response.json()["features"]:
 ### query by date
 querying using a python `date` object will query the 24 hour period of that day
 
-<details><summary>Expand Python Code Sample</summary>
+<details><summary>Expand 24 Hour Date Sample</summary>
 
 ```python
 import requests
@@ -67,7 +67,7 @@ from datetime import date
 from cqlalchemy.stac.query import QueryBuilder
 
 q = QueryBuilder()
-# planetary computer requires defining the constellation
+# planetary computer requires defining the collection
 q.collection.equals("landsat-c2-l2")
 # search entire utc 24 hour period for December 1st, 2023
 q.datetime.equals(date(2023, 12, 1))
@@ -86,7 +86,7 @@ results in
 ### query using an extension
 We'll utilize the above query and request data from that date that's less than 30 percent cloud cover by using the Electro-Optical cloud cover field
 
-<details><summary>Expand Python Code Sample</summary>
+<details><summary>Expand Less Than Sample</summary>
 
 ```python
 import requests
@@ -94,7 +94,7 @@ from datetime import date
 from cqlalchemy.stac.query import QueryBuilder
 
 q = QueryBuilder()
-# planetary computer requires defining the constellation
+# planetary computer requires defining the collection
 q.collection.equals("landsat-c2-l2")
 # search entire utc 24 hour period for December 1st, 2023
 q.datetime.equals(date(2023, 12, 1))
@@ -118,7 +118,7 @@ for feature in response.json()["features"]:
 
 We continue to expand on the above extension utilizing the Landsat extension `cloud_cover_land` field.
 
-<details><summary>Expand Python Code Sample</summary>
+<details><summary>Expand Less Than Sample</summary>
 
 ```python
 import requests
@@ -126,7 +126,7 @@ from datetime import date
 from cqlalchemy.stac.query import QueryBuilder
 
 q = QueryBuilder()
-# planetary computer requires defining the constellation
+# planetary computer requires defining the collection
 q.collection.equals("landsat-c2-l2")
 # search entire utc 24 hour period for December 1st, 2023
 q.datetime.equals(date(2023, 12, 1))
@@ -156,7 +156,7 @@ The results reveal that some data may not have the cloud_cover_land field define
 
 We can try again by forcing our search to be gt -1 and lt 20:
 
-<details><summary>Expand Python Code Sample</summary>
+<details><summary>Expand Greater Than / Less Than Range Sample</summary>
 
 ```python
 import requests
@@ -164,7 +164,7 @@ from datetime import date
 from cqlalchemy.stac.query import QueryBuilder
 
 q = QueryBuilder()
-# planetary computer requires defining the constellation
+# planetary computer requires defining the collection
 q.collection.equals("landsat-c2-l2")
 # search entire utc 24 hour period for December 1st, 2023
 q.datetime.equals(date(2023, 12, 1))
@@ -195,6 +195,31 @@ landsat-7
 0.0
 landsat-7
 ```
+
+Now for excluding specific strings. In this case we'll exclude the landsat wrs paths `"09"` and `"111"`.
+
+<details><summary>Expand Not In Sample</summary>
+
+```python
+import requests
+from datetime import date
+from cqlalchemy.stac.query import QueryBuilder
+q = QueryBuilder()
+# planetary computer requires defining the collection
+q.collection.equals("landsat-c2-l2")
+# search entire utc 24 hour period for December 1st, 2023
+q.datetime.equals(date(2023, 12, 1))
+# either use the lt or lte methods
+q.eo.cloud_cover.lt(30)
+# not in wrs path
+q.landsat.wrs_path.not_in_set(["091", "111"])
+planetary_search = "https://planetarycomputer.microsoft.com/api/stac/v1/search"
+response = requests.post(planetary_search, q.query_dump_json(limit=2))
+for feature in response.json()["features"]:
+    print(feature["properties"]["landsat:wrs_path"])
+```
+
+</details>
 
 ## cqlbuild
 
