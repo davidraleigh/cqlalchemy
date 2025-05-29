@@ -1,7 +1,7 @@
-# This file is generated with version 0.0.10 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
+# This file is generated with version 0.0.12 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
 #
 # extensions included:
-# https://stac-extensions.github.io/sar/v1.1.0/schema.json
+# https://stac-extensions.github.io/sar/v1.2.0/schema.json
 # https://stac-extensions.github.io/sat/v1.1.0/schema.json
 # https://stac-extensions.github.io/view/v1.0.0/schema.json#
 #
@@ -23,7 +23,7 @@
 # unique Enum classes generated:
 # True
 #
-# generated on 2025-01-05
+# generated on 2025-05-28
 
 from __future__ import annotations
 
@@ -240,6 +240,7 @@ class _NullCheck(_QueryBase):
 class _BaseString(_QueryBase):
     _eq_value = None
     _in_values = None
+    _not_in_values = None
     _like_value = None
     _is_null = None
 
@@ -247,6 +248,7 @@ class _BaseString(_QueryBase):
         self._is_null = None
         self._eq_value = None
         self._in_values = None
+        self._not_in_values = None
         self._like_value = None
 
     def is_null(self) -> QueryBuilder:
@@ -272,6 +274,19 @@ class _BaseString(_QueryBase):
                 "args": [
                     self.property_obj,
                     self._in_values
+                ]
+            }
+        elif self._not_in_values is not None and len(self._not_in_values) > 0:
+            return {
+                "op": "not",
+                "args": [
+                    {
+                        "op": "in",
+                        "args": [
+                            self.property_obj,
+                            self._not_in_values
+                        ]
+                    }
                 ]
             }
         elif self._like_value is not None:
@@ -302,10 +317,9 @@ class _EnumQuery(_BaseString):
         return c
 
     def _check(self, values: list[str]):
+        self._clear_values()
         if not set(values).issubset(self._enum_values):
             raise ValueError("")
-        if self._in_values is not None or self._eq_value is not None or self._like_value is not None:
-            raise ValueError("eq, in or like cannot already be set")
 
 
 class _StringQuery(_BaseString):
@@ -337,6 +351,20 @@ class _StringQuery(_BaseString):
         self._in_values = [str(x) for x in values]
         return self._parent_obj
 
+    def not_in_set(self, values: list[str]) -> QueryBuilder:
+        """
+        for the values input, create an not_in_set query for this field
+
+        Args:
+            values (list[str]): for the values input, create an not_in_set query for this field.
+
+        Returns:
+            QueryBuilder: query builder for additional queries to add
+        """
+        self._clear_values()
+        self._not_in_values = [str(x) for x in values]
+        return self._parent_obj
+
     def like(self, value: str) -> QueryBuilder:
         """
         for the value input, create a like query for this field. Requires using the '%' operator within the value string for wildcard checking
@@ -353,6 +381,7 @@ class _StringQuery(_BaseString):
 
     def _clear_values(self):
         self._in_values = None
+        self._not_in_values = None
         self._eq_value = None
         self._like_value = None
 
@@ -702,6 +731,12 @@ class _FrequencyBandQuery(_EnumQuery):
         self._in_values = extracted
         return self._parent_obj
 
+    def not_in_set(self, values: list[FrequencyBand]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._not_in_values = extracted
+        return self._parent_obj
+
     def P(self) -> QueryBuilder:
         return self.equals(FrequencyBand.P)
 
@@ -759,6 +794,12 @@ class _ObservationDirectionQuery(_EnumQuery):
         self._in_values = extracted
         return self._parent_obj
 
+    def not_in_set(self, values: list[ObservationDirection]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._not_in_values = extracted
+        return self._parent_obj
+
     def left(self) -> QueryBuilder:
         return self.equals(ObservationDirection.left)
 
@@ -768,7 +809,7 @@ class _ObservationDirectionQuery(_EnumQuery):
 
 class _SARExtension(_Extension):
     """
-    STAC SAR Extension to a STAC Item
+    STAC SAR Extension for STAC Items and STAC Collections.
 
     ...
 
@@ -843,6 +884,12 @@ class _OrbitStateQuery(_EnumQuery):
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
+        return self._parent_obj
+
+    def not_in_set(self, values: list[OrbitState]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._not_in_values = extracted
         return self._parent_obj
 
     def ascending(self) -> QueryBuilder:

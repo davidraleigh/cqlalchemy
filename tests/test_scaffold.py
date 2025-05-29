@@ -68,6 +68,12 @@ class _ObservationDirectionQuery(_EnumQuery):
         self._in_values = extracted
         return self._parent_obj
 
+    def not_in_set(self, values: list[ObservationDirection]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._not_in_values = extracted
+        return self._parent_obj
+
     def left(self) -> QueryBuilder:
         return self.equals(ObservationDirection.left)
 
@@ -134,6 +140,12 @@ class _FrequencyBandQuery(_EnumQuery):
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
+
+    def not_in_set(self, values: list[FrequencyBand]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._not_in_values = extracted
+        return self._parent_obj
 """
         expected_lines = expected.split("\n")
         actual, _ = build_enum(input_key, input_obj)
@@ -182,6 +194,12 @@ class _SARObservationDirectionQuery(_EnumQuery):
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
+        return self._parent_obj
+
+    def not_in_set(self, values: list[SARObservationDirection]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._not_in_values = extracted
         return self._parent_obj
 
     def left(self) -> QueryBuilder:

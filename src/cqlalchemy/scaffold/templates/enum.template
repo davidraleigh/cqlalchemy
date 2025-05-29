@@ -18,4 +18,10 @@ class _${class_name}Query(_EnumQuery):${enum_query_description}
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
+
+    def not_in_set(self, values: list[${class_name}]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._not_in_values = extracted
+        return self._parent_obj
 $custom_methods

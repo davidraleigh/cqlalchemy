@@ -34,6 +34,12 @@ class _AcceleratorQuery(_EnumQuery):
         self._in_values = extracted
         return self._parent_obj
 
+    def not_in_set(self, values: list[Accelerator]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._not_in_values = extracted
+        return self._parent_obj
+
 
 class Framework(str, Enum):
     """
@@ -76,6 +82,12 @@ class _FrameworkQuery(_EnumQuery):
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
+        return self._parent_obj
+
+    def not_in_set(self, values: list[Framework]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._not_in_values = extracted
         return self._parent_obj
 
 

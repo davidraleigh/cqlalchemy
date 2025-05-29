@@ -1,5 +1,5 @@
 import json
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from shapely import Point
 
@@ -9,7 +9,7 @@ from cqlalchemy.stac.query import QueryBuilder, _DateTimeEncoder, filter_groupin
 if __name__ == '__main__':
     import uuid
     query = q.QueryBuilder().datetime.equals(date.today()).\
-        updated.lt(datetime.now()).\
+        updated.lt(datetime.now(tz=timezone.utc)).\
         created.delta(date.today(), timedelta(45))
     query.sar.resolution_azimuth.lte(45)
     query.id.equals(str(uuid.uuid4()))

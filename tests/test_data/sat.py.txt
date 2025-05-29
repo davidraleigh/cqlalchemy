@@ -31,6 +31,12 @@ class _OrbitStateQuery(_EnumQuery):
         self._in_values = extracted
         return self._parent_obj
 
+    def not_in_set(self, values: list[OrbitState]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._not_in_values = extracted
+        return self._parent_obj
+
 
 class _SatExtension(_Extension):
     """

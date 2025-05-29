@@ -608,6 +608,12 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["op"], "in")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "mlm:framework")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1], ['Hugging Face', 'JAX'])
+        a.mlm.framework.not_in_set([Framework.Hugging_Face, Framework.JAX])
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "not")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["op"], "in")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][0]["property"], "mlm:framework")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][1], ['Hugging Face', 'JAX'])
         a.query_dump_json()
 
     def test_is_null_date_query(self):
@@ -714,6 +720,22 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["op"], "in")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "id")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1], [str(input_id_1), str(input_id_2)])
+
+    def test_not_in_set_uuids(self):
+        input_id_1 = uuid.uuid4()
+        input_id_2 = uuid.uuid4()
+        a = QueryBuilder()
+        a.id.not_in_set([input_id_1, input_id_2])
+        a_dict = a.query_dump()
+        a_json = a.query_dump_json()
+        self.assertIn(str(input_id_1), a_json)
+        self.assertIn(str(input_id_2), a_json)
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "not")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["op"], "in")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][0]["property"], "id")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][1], [str(input_id_1), str(input_id_2)])
 
     def test_collection(self):
         a = QueryBuilder()
