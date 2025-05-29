@@ -42,6 +42,11 @@ class _CommonNameQuery(_EnumQuery):
         self._eq_value = value.value
         return self._parent_obj
 
+    def not_equals(self, value: CommonName) -> QueryBuilder:
+        self._check([value.value])
+        self._ne_value = value.value
+        return self._parent_obj
+
     def in_set(self, values: list[CommonName]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)

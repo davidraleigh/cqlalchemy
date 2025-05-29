@@ -62,6 +62,11 @@ class _ObservationDirectionQuery(_EnumQuery):
         self._eq_value = value.value
         return self._parent_obj
 
+    def not_equals(self, value: ObservationDirection) -> QueryBuilder:
+        self._check([value.value])
+        self._ne_value = value.value
+        return self._parent_obj
+
     def in_set(self, values: list[ObservationDirection]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
@@ -135,6 +140,11 @@ class _FrequencyBandQuery(_EnumQuery):
         self._eq_value = value.value
         return self._parent_obj
 
+    def not_equals(self, value: FrequencyBand) -> QueryBuilder:
+        self._check([value.value])
+        self._ne_value = value.value
+        return self._parent_obj
+
     def in_set(self, values: list[FrequencyBand]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
@@ -188,6 +198,11 @@ class _SARObservationDirectionQuery(_EnumQuery):
     def equals(self, value: SARObservationDirection) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
+        return self._parent_obj
+
+    def not_equals(self, value: SARObservationDirection) -> QueryBuilder:
+        self._check([value.value])
+        self._ne_value = value.value
         return self._parent_obj
 
     def in_set(self, values: list[SARObservationDirection]) -> QueryBuilder:
