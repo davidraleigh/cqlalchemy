@@ -1,6 +1,6 @@
-class CommonName(str, Enum):
+class EOCommonNameEnum(str, Enum):
     """
-    Common Name Enum
+    EO Common Name Enum
     """
 
     pan = "pan"
@@ -25,35 +25,35 @@ class CommonName(str, Enum):
     lwir12 = "lwir12"
 
 
-class _CommonNameQuery(_EnumQuery):
+class _EOCommonNameEnumQuery(_EnumQuery):
     """
-    Common Name Enum Query Interface
+    EO Common Name Enum Query Interface
     Common Name of the band
     """
 
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _CommonNameQuery(field_name, parent_obj)
+        o = _EOCommonNameEnumQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: CommonName) -> QueryBuilder:
+    def equals(self, value: EOCommonNameEnum) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def not_equals(self, value: CommonName) -> QueryBuilder:
+    def not_equals(self, value: EOCommonNameEnum) -> QueryBuilder:
         self._check([value.value])
         self._ne_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[CommonName]) -> QueryBuilder:
+    def in_set(self, values: list[EOCommonNameEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
 
-    def not_in_set(self, values: list[CommonName]) -> QueryBuilder:
+    def not_in_set(self, values: list[EOCommonNameEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._not_in_values = extracted
@@ -72,7 +72,7 @@ class _EOExtension(_Extension):
         number query interface for searching items by the eo:center_wavelength field. Float input.
     cloud_cover: _NumberQuery
         number query interface for searching items by the eo:cloud_cover field where the minimum value is 0 and the max value is 100. Float input.
-    common_name : _CommonNameQuery
+    common_name : _EOCommonNameEnumQuery
         enum query interface for searching items by the eo:common_name field
     full_width_half_max: _NumberQuery
         number query interface for searching items by the eo:full_width_half_max field. Float input.
@@ -85,7 +85,7 @@ class _EOExtension(_Extension):
         super().__init__(query_block)
         self.center_wavelength = _NumberQuery.init_with_limits("eo:center_wavelength", query_block, min_value=None, max_value=None, is_int=False)
         self.cloud_cover = _NumberQuery.init_with_limits("eo:cloud_cover", query_block, min_value=0, max_value=100, is_int=False)
-        self.common_name = _CommonNameQuery.init_enums("eo:common_name", query_block, [x.value for x in CommonName])
+        self.common_name = _EOCommonNameEnumQuery.init_enums("eo:common_name", query_block, [x.value for x in EOCommonNameEnum])
         self.full_width_half_max = _NumberQuery.init_with_limits("eo:full_width_half_max", query_block, min_value=None, max_value=None, is_int=False)
         self.snow_cover = _NumberQuery.init_with_limits("eo:snow_cover", query_block, min_value=0, max_value=100, is_int=False)
         self.solar_illumination = _NumberQuery.init_with_limits("eo:solar_illumination", query_block, min_value=0, max_value=None, is_int=False)

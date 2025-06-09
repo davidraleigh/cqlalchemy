@@ -62,3 +62,6 @@ https://raw.githubusercontent.com/stac-extensions/hsi/refs/heads/main/json-schem
 https://raw.githubusercontent.com/stac-extensions/insar/refs/heads/main/json-schema/schema.json
 https://raw.githubusercontent.com/stac-extensions/label/refs/heads/main/json-schema/schema.json
 https://raw.githubusercontent.com/stac-extensions/ml-aoi/refs/heads/main/json-schema/schema.json
+https://planetlabs.github.io/stac-extension/v1.0.0-beta.3/schema.json
+https://umbra-space.github.io/umbra-stac-extension/json-schema/v1.0.0/schema.json
+https://stac-extensions.github.io/osc/v1.0.0-rc.3/schema.json

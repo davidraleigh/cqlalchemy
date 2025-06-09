@@ -1,0 +1,185 @@
+class PLItemTypeEnum(str, Enum):
+    """
+    PL Item Type Enum
+    """
+
+    Landsat8L1G = "Landsat8L1G"
+    PSOrthoTile = "PSOrthoTile"
+    PSScene = "PSScene"
+    PSScene3Band = "PSScene3Band"
+    PSScene4Band = "PSScene4Band"
+    MOD09GA = "MOD09GA"
+    MOD09GQ = "MOD09GQ"
+    MYD09GA = "MYD09GA"
+    MYD09GQ = "MYD09GQ"
+    REOrthoTile = "REOrthoTile"
+    REScene = "REScene"
+    Sentinel1 = "Sentinel1"
+    Sentinel2L1C = "Sentinel2L1C"
+    SkySatCollect = "SkySatCollect"
+    SkySatScene = "SkySatScene"
+    SkySatVideo = "SkySatVideo"
+
+
+class _PLItemTypeEnumQuery(_EnumQuery):
+    """
+    PL Item Type Enum Query Interface
+    """
+
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
+        o = _PLItemTypeEnumQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: PLItemTypeEnum) -> QueryBuilder:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def not_equals(self, value: PLItemTypeEnum) -> QueryBuilder:
+        self._check([value.value])
+        self._ne_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[PLItemTypeEnum]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+    def not_in_set(self, values: list[PLItemTypeEnum]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._not_in_values = extracted
+        return self._parent_obj
+
+
+class PLPublishingStageEnum(str, Enum):
+    """
+    PL Publishing Stage Enum
+    """
+
+    preview = "preview"
+    standard = "standard"
+    finalized = "finalized"
+
+
+class _PLPublishingStageEnumQuery(_EnumQuery):
+    """
+    PL Publishing Stage Enum Query Interface
+    """
+
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
+        o = _PLPublishingStageEnumQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: PLPublishingStageEnum) -> QueryBuilder:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def not_equals(self, value: PLPublishingStageEnum) -> QueryBuilder:
+        self._check([value.value])
+        self._ne_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[PLPublishingStageEnum]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+    def not_in_set(self, values: list[PLPublishingStageEnum]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._not_in_values = extracted
+        return self._parent_obj
+
+
+class PLQualityCategoryEnum(str, Enum):
+    """
+    PL Quality Category Enum
+    """
+
+    standard = "standard"
+    test = "test"
+
+
+class _PLQualityCategoryEnumQuery(_EnumQuery):
+    """
+    PL Quality Category Enum Query Interface
+    """
+
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
+        o = _PLQualityCategoryEnumQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: PLQualityCategoryEnum) -> QueryBuilder:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def not_equals(self, value: PLQualityCategoryEnum) -> QueryBuilder:
+        self._check([value.value])
+        self._ne_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[PLQualityCategoryEnum]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+    def not_in_set(self, values: list[PLQualityCategoryEnum]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._not_in_values = extracted
+        return self._parent_obj
+
+
+class _PlExtension(_Extension):
+    """
+    STAC Planet Labs Extension for STAC Items and STAC Collections. Validates the fields, doesn't require specific assets to be present.
+
+    ...
+
+    Attributes
+    ----------
+    black_fill: _NumberQuery
+        number query interface for searching items by the pl:black_fill field where the minimum value is 0 and the max value is 100. Float input.
+    clear_percent: _NumberQuery
+        number query interface for searching items by the pl:clear_percent field where the minimum value is 0 and the max value is 100. Float input.
+    grid_cell : _StringQuery
+        string query interface for searching items by the pl:grid_cell field
+    ground_control : _BooleanQuery
+        enum query interface for searching items by the pl:ground_control field
+    ground_control_ratio: _NumberQuery
+        number query interface for searching items by the pl:ground_control_ratio field where the minimum value is 0 and the max value is 1. Float input.
+    item_type : _PLItemTypeEnumQuery
+        enum query interface for searching items by the pl:item_type field
+    pixel_resolution: _NumberQuery
+        number query interface for searching items by the pl:pixel_resolution field. Float input.
+    publishing_stage : _PLPublishingStageEnumQuery
+        enum query interface for searching items by the pl:publishing_stage field
+    quality_category : _PLQualityCategoryEnumQuery
+        enum query interface for searching items by the pl:quality_category field
+    strip_id : _StringQuery
+        string query interface for searching items by the pl:strip_id field
+    """
+    def __init__(self, query_block: QueryBuilder):
+        super().__init__(query_block)
+        self.black_fill = _NumberQuery.init_with_limits("pl:black_fill", query_block, min_value=0, max_value=100, is_int=False)
+        self.clear_percent = _NumberQuery.init_with_limits("pl:clear_percent", query_block, min_value=0, max_value=100, is_int=False)
+        self.grid_cell = _StringQuery("pl:grid_cell", query_block)
+        self.ground_control = _BooleanQuery("pl:ground_control", query_block)
+        self.ground_control_ratio = _NumberQuery.init_with_limits("pl:ground_control_ratio", query_block, min_value=0, max_value=1, is_int=False)
+        self.item_type = _PLItemTypeEnumQuery.init_enums("pl:item_type", query_block, [x.value for x in PLItemTypeEnum])
+        self.pixel_resolution = _NumberQuery.init_with_limits("pl:pixel_resolution", query_block, min_value=None, max_value=None, is_int=False)
+        self.publishing_stage = _PLPublishingStageEnumQuery.init_enums("pl:publishing_stage", query_block, [x.value for x in PLPublishingStageEnum])
+        self.quality_category = _PLQualityCategoryEnumQuery.init_enums("pl:quality_category", query_block, [x.value for x in PLQualityCategoryEnum])
+        self.strip_id = _StringQuery("pl:strip_id", query_block)

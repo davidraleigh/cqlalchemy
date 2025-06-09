@@ -28,14 +28,18 @@ EXTENSION_ATTR = "\n        self.{jsond_prefix} = {class_name}(self)"
 ATTR_DOC = "    {partial_name} : {class_name}\n        datetime query interface for searching items by the end_datetime field"
 
 
-def build_enum(field_name: str, enum_object: dict, full_name=False, add_unique=False, field_description=""):
+def build_enum(field_name: str, enum_object: dict, full_enum_name=False, add_unique=False, field_description=""):
     prefix = ""
-    if full_name and ":" in field_name:
+    suffix = ""
+    if full_enum_name and ":" in field_name:
         prefix = field_name.split(":")[0].upper()
+        if len(prefix) > 3:
+            prefix = prefix.lower().capitalize()
+
+        suffix = "Enum"
     if ":" in field_name:
         field_name = field_name.split(":")[1]
-    class_name = prefix + "".join([x.capitalize() for x in field_name.split("_")])
-
+    class_name = prefix + "".join([x.capitalize() for x in field_name.split("_")]) + suffix
     member_definitions = ""
     custom_methods = ""
     for x in enum_object["enum"]:
@@ -44,7 +48,8 @@ def build_enum(field_name: str, enum_object: dict, full_name=False, add_unique=F
         if add_unique:
             custom_methods += enum_custom_method_template.substitute(member=member, class_name=class_name) + "\n"
 
-    field_description_name = " ".join([x.capitalize() for x in field_name.strip().split("_")])
+    field_description_name = prefix + " " + " ".join([x.capitalize() for x in field_name.strip().split("_")])
+    field_description_name = field_description_name.strip()
     enum_query_description = f"\n    \"\"\"\n    {field_description_name} Enum Query Interface\n    \"\"\"\n"
     if field_description:
         enum_query_description = f"\n    \"\"\"\n    {field_description_name} Enum Query Interface\n    {field_description}\n    \"\"\"\n"
@@ -92,7 +97,7 @@ class ExtensionBuilder:
     class_name = ""
     jsond_prefix = ""
 
-    def __init__(self, extension_schema, force_string_enum=False, fields_to_exclude=None, add_unique_enum=False):
+    def __init__(self, extension_schema, force_string_enum=False, fields_to_exclude=None, add_unique_enum=False, full_enum_name=False):
         schema_url = extension_schema['$id']
         if fields_to_exclude is None:
             fields_to_exclude = []
@@ -137,16 +142,22 @@ class ExtensionBuilder:
                 #   'https://stac-extensions.github.io/pointcloud/v2.0.0/schema.json#'
                 logger.warning(f"odd formating for {schema_url}")
         elif "v1" in extension_schema["$id"]:
-            # TODO 'https://stac-extensions.github.io/osc/v1.0.0-rc.3/schema.json#'
-            #   https://stac-extensions.github.io/tiled-assets/v1.0.0/schema.json
-            #   https://stac-extensions.github.io/usfws-nwi/v1.0.0/schema.json
-            #   https://stac-extensions.github.io/web-map-links/v1.2.0/schema.json
-            #   https://stac-extensions.github.io/authentication/v1.1.0/schema.json
-            #   https://stac-extensions.github.io/ml-model/v1.0.0/schema.json
-            #   'https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json#'
-            #   'https://stac-extensions.github.io/language/v1.0.0/schema.json#'
-            logger.error(f"skipping any extensions that are v1 and missing definitions[\"fields\"][\"properties\"]. This extension is {schema_url}")
-            return
+            if "fields" in definitions:
+                field_names = [x for x in list(definitions["fields"].keys()) if ":" in x]
+                if len(field_names) != len(list(definitions["fields"].keys())):
+                    logger.warning(f"{field_names} less than {list(definitions['fields'].keys())}")
+                definitions = definitions["fields"]
+            else:
+                # TODO 'https://stac-extensions.github.io/osc/v1.0.0-rc.3/schema.json#'
+                #   https://stac-extensions.github.io/tiled-assets/v1.0.0/schema.json
+                #   https://stac-extensions.github.io/usfws-nwi/v1.0.0/schema.json
+                #   https://stac-extensions.github.io/web-map-links/v1.2.0/schema.json
+                #   https://stac-extensions.github.io/authentication/v1.1.0/schema.json
+                #   https://stac-extensions.github.io/ml-model/v1.0.0/schema.json
+                #   'https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json#'
+                #   'https://stac-extensions.github.io/language/v1.0.0/schema.json#'
+                logger.error(f"skipping any extensions that are v1 and missing definitions[\"fields\"][\"properties\"]. This extension is {schema_url}")
+                return
 
         if "fields" in definitions and "properties" not in definitions["fields"]:
             # TODO 'https://stac-extensions.github.io/landsat/v2.0.0/schema.json'
@@ -250,7 +261,7 @@ class ExtensionBuilder:
                 extension_attr_docs += other_attr_doc(partial_name=partial_name, class_name="_DateQuery", field_name=field_name)
             elif field_obj["type"] == "string" and "enum" in field_obj and not force_string_enum and not any(s[0].isdigit() for s in field_obj["enum"]):
                 # landsat enum -> not any(s[0].isdigit() for s in field_obj["enum"])
-                enum_definition, class_name = build_enum(field_name, field_obj, add_unique=add_unique_enum, field_description=field_description)
+                enum_definition, class_name = build_enum(field_name, field_obj, full_enum_name=full_enum_name, add_unique=add_unique_enum, field_description=field_description)
                 enum_definitions += enum_definition
                 enum_definitions += "\n\n"
                 attribute_instantiations += enum_query_attr_template.substitute(field_name=field_name,
@@ -292,7 +303,7 @@ class ExtensionBuilder:
                                                                           attribute_instantiations=attribute_instantiations)
 
 
-def build_query_file(extension_list: list[dict], fields_to_exclude=None, add_unique_enum=False) -> str:
+def build_query_file(extension_list: list[dict], fields_to_exclude=None, add_unique_enum=False, full_enum_name=False) -> str:
     if fields_to_exclude is None:
         fields_to_exclude = []
     else:
@@ -301,7 +312,7 @@ def build_query_file(extension_list: list[dict], fields_to_exclude=None, add_uni
     extension_definitions = ""
     extension_attributes = ""
     for extension_schema in extension_list:
-        extension_builder = ExtensionBuilder(extension_schema, fields_to_exclude=fields_to_exclude, add_unique_enum=add_unique_enum)
+        extension_builder = ExtensionBuilder(extension_schema, fields_to_exclude=fields_to_exclude, add_unique_enum=add_unique_enum, full_enum_name=full_enum_name)
         extension_definitions += f"\n\n{extension_builder.extension}"
         extension_attributes += EXTENSION_ATTR.format(jsond_prefix=extension_builder.jsond_prefix,
                                                       class_name=extension_builder.class_name)

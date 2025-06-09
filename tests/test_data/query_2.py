@@ -1,4 +1,4 @@
-# This file is generated with version 0.0.12 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
+# This file is generated with version 0.0.14 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
 #
 # extensions included:
 # https://stac-extensions.github.io/sar/v1.2.0/schema.json
@@ -23,7 +23,7 @@
 # unique Enum classes generated:
 # True
 #
-# generated on 2025-05-28
+# generated on 2025-06-09
 
 from __future__ import annotations
 
@@ -345,7 +345,7 @@ class _StringQuery(_BaseString):
             QueryBuilder: query builder for additional queries to add
         """
         self._clear_values()
-        self._eq_value = str(value)
+        self._eq_value = self._adjust_enum(value)
         return self._parent_obj
 
     def not_equals(self, value: str) -> QueryBuilder:
@@ -359,7 +359,7 @@ class _StringQuery(_BaseString):
             QueryBuilder: query builder for additional queries to add
         """
         self._clear_values()
-        self._ne_value = str(value)
+        self._ne_value = self._adjust_enum(value)
         return self._parent_obj
 
     def in_set(self, values: list[str]) -> QueryBuilder:
@@ -373,7 +373,7 @@ class _StringQuery(_BaseString):
             QueryBuilder: query builder for additional queries to add
         """
         self._clear_values()
-        self._in_values = [str(x) for x in values]
+        self._in_values = [self._adjust_enum(x) for x in values]
         return self._parent_obj
 
     def not_in_set(self, values: list[str]) -> QueryBuilder:
@@ -387,7 +387,7 @@ class _StringQuery(_BaseString):
             QueryBuilder: query builder for additional queries to add
         """
         self._clear_values()
-        self._not_in_values = [str(x) for x in values]
+        self._not_in_values = [self._adjust_enum(x) for x in values]
         return self._parent_obj
 
     def like(self, value: str) -> QueryBuilder:
@@ -401,7 +401,7 @@ class _StringQuery(_BaseString):
             QueryBuilder: query builder for additional queries to add
         """
         self._clear_values()
-        self._like_value = value
+        self._like_value = self._adjust_enum(value)
         return self._parent_obj
 
     def _clear_values(self):
@@ -410,6 +410,12 @@ class _StringQuery(_BaseString):
         self._eq_value = None
         self._ne_value = None
         self._like_value = None
+
+    @staticmethod
+    def _adjust_enum(value):
+        if isinstance(value, Enum):
+            return value.value
+        return str(value)
 
 
 class _Query(_QueryBase):
@@ -432,8 +438,13 @@ class _Query(_QueryBase):
                 "op": "isNull",
                 "args": [self.property_obj]
             }
-        elif self._gt_value is None and self._lt_value is None and self._ne_value is None:
-            return None
+        elif self._gt_value is None and self._lt_value is None:
+            if self._ne_value is None:
+                return None
+            return {
+                "op": "!=",
+                "args": [self.property_obj, self._ne_value]
+            }
 
         gt_query = {
             "op": self._gt_operand,
@@ -724,6 +735,7 @@ class _NumberQuery(_Query):
     def _check(self, value):
         if self._is_int and not isinstance(value, int) and math.floor(value) != value:
             raise ValueError(f"for integer type, must use ints. {value} is not an int")
+        self._check_range(value)
 
 
 class _SpatialQuery(_QueryBase):
@@ -794,9 +806,9 @@ class _Extension:
         return args
 
 
-class FrequencyBand(str, Enum):
+class SARFrequencyBandEnum(str, Enum):
     """
-    Frequency Band Enum
+    SAR Frequency Band Enum
     """
 
     P = "P"
@@ -809,113 +821,113 @@ class FrequencyBand(str, Enum):
     Ka = "Ka"
 
 
-class _FrequencyBandQuery(_EnumQuery):
+class _SARFrequencyBandEnumQuery(_EnumQuery):
     """
-    Frequency Band Enum Query Interface
+    SAR Frequency Band Enum Query Interface
     Frequency Band
     """
 
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _FrequencyBandQuery(field_name, parent_obj)
+        o = _SARFrequencyBandEnumQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: FrequencyBand) -> QueryBuilder:
+    def equals(self, value: SARFrequencyBandEnum) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def not_equals(self, value: FrequencyBand) -> QueryBuilder:
+    def not_equals(self, value: SARFrequencyBandEnum) -> QueryBuilder:
         self._check([value.value])
         self._ne_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[FrequencyBand]) -> QueryBuilder:
+    def in_set(self, values: list[SARFrequencyBandEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
 
-    def not_in_set(self, values: list[FrequencyBand]) -> QueryBuilder:
+    def not_in_set(self, values: list[SARFrequencyBandEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._not_in_values = extracted
         return self._parent_obj
 
     def P(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.P)
+        return self.equals(SARFrequencyBandEnum.P)
 
     def L(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.L)
+        return self.equals(SARFrequencyBandEnum.L)
 
     def S(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.S)
+        return self.equals(SARFrequencyBandEnum.S)
 
     def C(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.C)
+        return self.equals(SARFrequencyBandEnum.C)
 
     def X(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.X)
+        return self.equals(SARFrequencyBandEnum.X)
 
     def Ku(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.Ku)
+        return self.equals(SARFrequencyBandEnum.Ku)
 
     def K(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.K)
+        return self.equals(SARFrequencyBandEnum.K)
 
     def Ka(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.Ka)
+        return self.equals(SARFrequencyBandEnum.Ka)
 
 
-class ObservationDirection(str, Enum):
+class SARObservationDirectionEnum(str, Enum):
     """
-    Observation Direction Enum
+    SAR Observation Direction Enum
     """
 
     left = "left"
     right = "right"
 
 
-class _ObservationDirectionQuery(_EnumQuery):
+class _SARObservationDirectionEnumQuery(_EnumQuery):
     """
-    Observation Direction Enum Query Interface
+    SAR Observation Direction Enum Query Interface
     Antenna pointing direction
     """
 
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _ObservationDirectionQuery(field_name, parent_obj)
+        o = _SARObservationDirectionEnumQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: ObservationDirection) -> QueryBuilder:
+    def equals(self, value: SARObservationDirectionEnum) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def not_equals(self, value: ObservationDirection) -> QueryBuilder:
+    def not_equals(self, value: SARObservationDirectionEnum) -> QueryBuilder:
         self._check([value.value])
         self._ne_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[ObservationDirection]) -> QueryBuilder:
+    def in_set(self, values: list[SARObservationDirectionEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
 
-    def not_in_set(self, values: list[ObservationDirection]) -> QueryBuilder:
+    def not_in_set(self, values: list[SARObservationDirectionEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._not_in_values = extracted
         return self._parent_obj
 
     def left(self) -> QueryBuilder:
-        return self.equals(ObservationDirection.left)
+        return self.equals(SARObservationDirectionEnum.left)
 
     def right(self) -> QueryBuilder:
-        return self.equals(ObservationDirection.right)
+        return self.equals(SARObservationDirectionEnum.right)
 
 
 class _SARExtension(_Extension):
@@ -930,7 +942,7 @@ class _SARExtension(_Extension):
         field can be checked to see if sar:beam_ids is null
     center_frequency: _NumberQuery
         number query interface for searching items by the sar:center_frequency field. Float input.
-    frequency_band : _FrequencyBandQuery
+    frequency_band : _SARFrequencyBandEnumQuery
         enum query interface for searching items by the sar:frequency_band field
     instrument_mode : _StringQuery
         string query interface for searching items by the sar:instrument_mode field
@@ -938,7 +950,7 @@ class _SARExtension(_Extension):
         number query interface for searching items by the sar:looks_azimuth field where the minimum value is 0. Float input.. Integer input.
     looks_range: _NumberQuery
         number query interface for searching items by the sar:looks_range field where the minimum value is 0. Float input.. Integer input.
-    observation_direction : _ObservationDirectionQuery
+    observation_direction : _SARObservationDirectionEnumQuery
         enum query interface for searching items by the sar:observation_direction field
     polarizations : _NullCheck
         field can be checked to see if sar:polarizations is null
@@ -953,20 +965,20 @@ class _SARExtension(_Extension):
         super().__init__(query_block)
         self.beam_ids = _NullCheck("sar:beam_ids", query_block)
         self.center_frequency = _NumberQuery.init_with_limits("sar:center_frequency", query_block, min_value=None, max_value=None, is_int=False)
-        self.frequency_band = _FrequencyBandQuery.init_enums("sar:frequency_band", query_block, [x.value for x in FrequencyBand])
+        self.frequency_band = _SARFrequencyBandEnumQuery.init_enums("sar:frequency_band", query_block, [x.value for x in SARFrequencyBandEnum])
         self.instrument_mode = _StringQuery("sar:instrument_mode", query_block)
         self.looks_azimuth = _NumberQuery.init_with_limits("sar:looks_azimuth", query_block, min_value=0, max_value=None, is_int=True)
         self.looks_range = _NumberQuery.init_with_limits("sar:looks_range", query_block, min_value=0, max_value=None, is_int=True)
-        self.observation_direction = _ObservationDirectionQuery.init_enums("sar:observation_direction", query_block, [x.value for x in ObservationDirection])
+        self.observation_direction = _SARObservationDirectionEnumQuery.init_enums("sar:observation_direction", query_block, [x.value for x in SARObservationDirectionEnum])
         self.polarizations = _NullCheck("sar:polarizations", query_block)
         self.product_type = _StringQuery("sar:product_type", query_block)
         self.resolution_azimuth = _NumberQuery.init_with_limits("sar:resolution_azimuth", query_block, min_value=0, max_value=None, is_int=False)
         self.resolution_range = _NumberQuery.init_with_limits("sar:resolution_range", query_block, min_value=0, max_value=None, is_int=False)
 
 
-class OrbitState(str, Enum):
+class SATOrbitStateEnum(str, Enum):
     """
-    Orbit State Enum
+    SAT Orbit State Enum
     """
 
     ascending = "ascending"
@@ -974,48 +986,48 @@ class OrbitState(str, Enum):
     geostationary = "geostationary"
 
 
-class _OrbitStateQuery(_EnumQuery):
+class _SATOrbitStateEnumQuery(_EnumQuery):
     """
-    Orbit State Enum Query Interface
+    SAT Orbit State Enum Query Interface
     Orbit State
     """
 
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _OrbitStateQuery(field_name, parent_obj)
+        o = _SATOrbitStateEnumQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: OrbitState) -> QueryBuilder:
+    def equals(self, value: SATOrbitStateEnum) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def not_equals(self, value: OrbitState) -> QueryBuilder:
+    def not_equals(self, value: SATOrbitStateEnum) -> QueryBuilder:
         self._check([value.value])
         self._ne_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[OrbitState]) -> QueryBuilder:
+    def in_set(self, values: list[SATOrbitStateEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
 
-    def not_in_set(self, values: list[OrbitState]) -> QueryBuilder:
+    def not_in_set(self, values: list[SATOrbitStateEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._not_in_values = extracted
         return self._parent_obj
 
     def ascending(self) -> QueryBuilder:
-        return self.equals(OrbitState.ascending)
+        return self.equals(SATOrbitStateEnum.ascending)
 
     def descending(self) -> QueryBuilder:
-        return self.equals(OrbitState.descending)
+        return self.equals(SATOrbitStateEnum.descending)
 
     def geostationary(self) -> QueryBuilder:
-        return self.equals(OrbitState.geostationary)
+        return self.equals(SATOrbitStateEnum.geostationary)
 
 
 class _SatExtension(_Extension):
@@ -1028,7 +1040,7 @@ class _SatExtension(_Extension):
     ----------
     orbit_cycle: _NumberQuery
         number query interface for searching items by the sat:orbit_cycle field where the minimum value is 1. Float input.. Integer input.
-    orbit_state : _OrbitStateQuery
+    orbit_state : _SATOrbitStateEnumQuery
         enum query interface for searching items by the sat:orbit_state field
     orbit_state_vectors : _NullCheck
         field can be checked to see if sat:orbit_state_vectors is null
@@ -1036,7 +1048,7 @@ class _SatExtension(_Extension):
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
         self.orbit_cycle = _NumberQuery.init_with_limits("sat:orbit_cycle", query_block, min_value=1, max_value=None, is_int=True)
-        self.orbit_state = _OrbitStateQuery.init_enums("sat:orbit_state", query_block, [x.value for x in OrbitState])
+        self.orbit_state = _SATOrbitStateEnumQuery.init_enums("sat:orbit_state", query_block, [x.value for x in SATOrbitStateEnum])
         self.orbit_state_vectors = _NullCheck("sat:orbit_state_vectors", query_block)
 
 

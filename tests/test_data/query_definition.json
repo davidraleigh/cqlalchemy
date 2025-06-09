@@ -1,4 +1,4 @@
 {
-  "extensions": ["sat", "sar", "eo", "view", "landsat", "mlm", "https://stac-extensions.github.io/projection/v2.0.0/schema.json"],
+  "extensions": ["sat", "sar", "eo", "view", "landsat", "mlm", "https://stac-extensions.github.io/projection/v2.0.0/schema.json", "https://planetlabs.github.io/stac-extension/v1.0.0-beta.3/schema.json", "https://umbra-space.github.io/umbra-stac-extension/json-schema/v1.0.0/schema.json"],
   "add_unique_enum": true
 }
