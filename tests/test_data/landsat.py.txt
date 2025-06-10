@@ -1,6 +1,6 @@
-class CollectionCategory(str, Enum):
+class LandsatCollectionCategoryEnum(str, Enum):
     """
-    Collection Category Enum
+    Landsat Collection Category Enum
     """
 
     A1 = "A1"
@@ -10,44 +10,44 @@ class CollectionCategory(str, Enum):
     RT = "RT"
 
 
-class _CollectionCategoryQuery(_EnumQuery):
+class _LandsatCollectionCategoryEnumQuery(_EnumQuery):
     """
-    Collection Category Enum Query Interface
+    Landsat Collection Category Enum Query Interface
     Collection Category
     """
 
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _CollectionCategoryQuery(field_name, parent_obj)
+        o = _LandsatCollectionCategoryEnumQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: CollectionCategory) -> QueryBuilder:
+    def equals(self, value: LandsatCollectionCategoryEnum) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def not_equals(self, value: CollectionCategory) -> QueryBuilder:
+    def not_equals(self, value: LandsatCollectionCategoryEnum) -> QueryBuilder:
         self._check([value.value])
         self._ne_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[CollectionCategory]) -> QueryBuilder:
+    def in_set(self, values: list[LandsatCollectionCategoryEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
 
-    def not_in_set(self, values: list[CollectionCategory]) -> QueryBuilder:
+    def not_in_set(self, values: list[LandsatCollectionCategoryEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._not_in_values = extracted
         return self._parent_obj
 
 
-class Correction(str, Enum):
+class LandsatCorrectionEnum(str, Enum):
     """
-    Correction Enum
+    Landsat Correction Enum
     """
 
     L1TP = "L1TP"
@@ -57,35 +57,35 @@ class Correction(str, Enum):
     L2SP = "L2SP"
 
 
-class _CorrectionQuery(_EnumQuery):
+class _LandsatCorrectionEnumQuery(_EnumQuery):
     """
-    Correction Enum Query Interface
+    Landsat Correction Enum Query Interface
     Product Correction Level
     """
 
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _CorrectionQuery(field_name, parent_obj)
+        o = _LandsatCorrectionEnumQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: Correction) -> QueryBuilder:
+    def equals(self, value: LandsatCorrectionEnum) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def not_equals(self, value: Correction) -> QueryBuilder:
+    def not_equals(self, value: LandsatCorrectionEnum) -> QueryBuilder:
         self._check([value.value])
         self._ne_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[Correction]) -> QueryBuilder:
+    def in_set(self, values: list[LandsatCorrectionEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
 
-    def not_in_set(self, values: list[Correction]) -> QueryBuilder:
+    def not_in_set(self, values: list[LandsatCorrectionEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._not_in_values = extracted
@@ -102,11 +102,11 @@ class _LandsatExtension(_Extension):
     ----------
     cloud_cover_land: _NumberQuery
         number query interface for searching items by the landsat:cloud_cover_land field where the minimum value is -1 and the max value is 100. Float input.
-    collection_category : _CollectionCategoryQuery
+    collection_category : _LandsatCollectionCategoryEnumQuery
         enum query interface for searching items by the landsat:collection_category field
     collection_number : _StringQuery
         string query interface for searching items by the landsat:collection_number field
-    correction : _CorrectionQuery
+    correction : _LandsatCorrectionEnumQuery
         enum query interface for searching items by the landsat:correction field
     product_generated : _DateQuery
         datetime query interface for searching items by the landsat:product_generated field
@@ -122,9 +122,9 @@ class _LandsatExtension(_Extension):
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
         self.cloud_cover_land = _NumberQuery.init_with_limits("landsat:cloud_cover_land", query_block, min_value=-1, max_value=100, is_int=False)
-        self.collection_category = _CollectionCategoryQuery.init_enums("landsat:collection_category", query_block, [x.value for x in CollectionCategory])
+        self.collection_category = _LandsatCollectionCategoryEnumQuery.init_enums("landsat:collection_category", query_block, [x.value for x in LandsatCollectionCategoryEnum])
         self.collection_number = _StringQuery("landsat:collection_number", query_block)
-        self.correction = _CorrectionQuery.init_enums("landsat:correction", query_block, [x.value for x in Correction])
+        self.correction = _LandsatCorrectionEnumQuery.init_enums("landsat:correction", query_block, [x.value for x in LandsatCorrectionEnum])
         self.product_generated = _DateQuery("landsat:product_generated", query_block)
         self.scene_id = _StringQuery("landsat:scene_id", query_block)
         self.wrs_path = _StringQuery("landsat:wrs_path", query_block)

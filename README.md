@@ -221,6 +221,206 @@ for feature in response.json()["features"]:
 
 </details>
 
+## Additional Query Scenarios
+
+### Date and Time Queries
+
+**Exact Date Match**
+
+<details><summary>Expand Exact Date Match Sample</summary>
+
+```python
+import requests
+from datetime import date
+from cqlalchemy.stac.query import QueryBuilder
+
+q = QueryBuilder()
+q.collection.equals("landsat-c2-l2")
+q.datetime.equals(date(2023, 12, 1))
+planetary_search = "https://planetarycomputer.microsoft.com/api/stac/v1/search"
+print(q.query_dump_json())
+response = requests.post(planetary_search, q.query_dump_json(limit=2))
+```
+
+</details>
+
+**Range Queries**
+
+<details><summary>Expand Range Query Sample</summary>
+
+```python
+import requests
+from datetime import datetime, timezone
+from cqlalchemy.stac.query import QueryBuilder
+
+q = QueryBuilder()
+q.collection.equals("landsat-c2-l2")
+q.datetime.gte(datetime(2023, 12, 1, tzinfo=timezone.utc))
+q.datetime.lt(datetime(2023, 12, 31, tzinfo=timezone.utc))
+planetary_search = "https://planetarycomputer.microsoft.com/api/stac/v1/search"
+print(q.query_dump_json())
+response = requests.post(planetary_search, q.query_dump_json(limit=2))
+```
+
+</details>
+
+**Timezone-Specific Query**
+
+<details><summary>Expand Timezone Query Sample</summary>
+
+```python
+import requests
+from datetime import date, timezone, timedelta
+from cqlalchemy.stac.query import QueryBuilder
+
+q = QueryBuilder()
+q.collection.equals("landsat-c2-l2")
+pst = timezone(timedelta(hours=-8))
+q.datetime.equals(date(2023, 12, 1), tzinfo=pst)
+planetary_search = "https://planetarycomputer.microsoft.com/api/stac/v1/search"
+print(q.query_dump_json())
+response = requests.post(planetary_search, q.query_dump_json(limit=2))
+```
+
+</details>
+
+**Exclude Specific Date**
+
+<details><summary>Expand Exclude Date Sample</summary>
+
+```python
+import requests
+from datetime import date
+from cqlalchemy.stac.query import QueryBuilder
+
+q = QueryBuilder()
+q.collection.equals("landsat-c2-l2")
+q.datetime.not_equals(date(2023, 12, 1))
+planetary_search = "https://planetarycomputer.microsoft.com/api/stac/v1/search"
+print(q.query_dump_json())
+response = requests.post(planetary_search, q.query_dump_json(limit=2))
+```
+
+</details>
+
+**Infer Timezone from Geometry**
+
+<details><summary>Expand Geometry Timezone Sample</summary>
+
+```python
+import requests
+from datetime import date
+from zoneinfo import ZoneInfo
+from timezonefinder import TimezoneFinder
+from shapely.geometry import shape
+from shapely.validation import make_valid
+from cqlalchemy.stac.query import QueryBuilder
+
+url = "http://raw.githubusercontent.com/johan/world.geo.json/master/countries/USA/WA/King.geo.json"
+r = requests.get(url)
+geom_dict = r.json()['features'][0]['geometry']
+geom = make_valid(shape(geom_dict))
+tf = TimezoneFinder()
+tz = ZoneInfo(tf.timezone_at(lng=geom.centroid.x, lat=geom.centroid.y))
+
+q = QueryBuilder()
+q.collection.equals("landsat-c2-l2")
+q.geometry.intersects(geom)
+q.datetime.equals(date(2023, 12, 1), tzinfo=tz)
+planetary_search = "https://planetarycomputer.microsoft.com/api/stac/v1/search"
+print(q.query_dump_json())
+response = requests.post(planetary_search, q.query_dump_json(limit=2))
+```
+
+</details>
+
+### String Queries
+
+<details><summary>Expand String Query Samples</summary>
+
+```python
+import requests
+from datetime import date
+from cqlalchemy.stac.query import QueryBuilder
+
+q = QueryBuilder()
+q.collection.equals("landsat-c2-l2")
+q.datetime.equals(date(2023, 12, 1))
+q.platform.equals("landsat-8")
+q.platform.like("landsat-%")
+q.platform.not_equals("landsat-7")
+q.platform.in_set(["landsat-8", "landsat-9"])
+q.platform.not_in_set(["landsat-5"])
+planetary_search = "https://planetarycomputer.microsoft.com/api/stac/v1/search"
+print(q.query_dump_json())
+response = requests.post(planetary_search, q.query_dump_json(limit=2))
+```
+
+</details>
+
+### Enum Queries
+
+<details><summary>Expand Enum Query Sample</summary>
+
+```python
+import requests
+from datetime import date
+from cqlalchemy.stac.query import QueryBuilder
+
+q = QueryBuilder()
+q.collection.equals("sentinel-1-grd")
+q.datetime.equals(date(2023, 12, 1))
+q.sat.orbit_direction.in_set(["ascending"])  # enum uses string methods
+planetary_search = "https://planetarycomputer.microsoft.com/api/stac/v1/search"
+print(q.query_dump_json())
+response = requests.post(planetary_search, q.query_dump_json(limit=2))
+```
+
+</details>
+
+### Float Queries
+
+<details><summary>Expand Float Query Sample</summary>
+
+```python
+import requests
+from datetime import date
+from cqlalchemy.stac.query import QueryBuilder
+
+q = QueryBuilder()
+q.collection.equals("landsat-c2-l2")
+q.datetime.equals(date(2023, 12, 1))
+q.landsat.cloud_cover.gt(10)
+q.landsat.cloud_cover.lt(30)
+planetary_search = "https://planetarycomputer.microsoft.com/api/stac/v1/search"
+print(q.query_dump_json())
+response = requests.post(planetary_search, q.query_dump_json(limit=2))
+```
+
+</details>
+
+### STAC Property Access
+
+<details><summary>Expand STAC Property Sample</summary>
+
+```python
+import requests
+from datetime import date
+from cqlalchemy.stac.query import QueryBuilder
+
+q = QueryBuilder()
+q.collection.equals("landsat-c2-l2")
+# default property
+q.created.gt(date(2023, 12, 1))
+# extension property must be prefixed
+q.landsat.cloud_cover.lt(20)
+planetary_search = "https://planetarycomputer.microsoft.com/api/stac/v1/search"
+print(q.query_dump_json())
+response = requests.post(planetary_search, q.query_dump_json(limit=2))
+```
+
+</details>
+
 ## cqlbuild
 
 The `cqlbuild` is an interactive cli that allows for creating your own STAC cql2 query class.

@@ -8,9 +8,18 @@ import shapely
 from shapely import Point
 
 from cqlalchemy.stac.query import (
-    Framework,
-    ObservationDirection,
+    EOCommonNameEnum,
+    LandsatCollectionCategoryEnum,
+    LandsatCorrectionEnum,
+    MLMAcceleratorEnum,
+    MLMFrameworkEnum,
+    PLItemTypeEnum,
+    PLPublishingStageEnum,
+    PLQualityCategoryEnum,
     QueryBuilder,
+    SARFrequencyBandEnum,
+    SARObservationDirectionEnum,
+    SATOrbitStateEnum,
     _NumberQuery,
 )
 
@@ -319,7 +328,7 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1], "Landsat%")
         a.query_dump_json()
 
-    def test_gsd(self):
+    def test_view_azimuth(self):
         a = QueryBuilder()
         a.view.azimuth.gte(0.25)
         a.view.azimuth.lte(0.75)
@@ -336,7 +345,7 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1], 0.75)
         a.query_dump_json()
 
-    def test_gsd_gte_lte_ne(self):
+    def test_view_azimuth_gte_lte_ne(self):
         a = QueryBuilder()
         a.view.azimuth.gte(0.25)
         a.view.azimuth.lte(0.75)
@@ -357,7 +366,7 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["args"][2]["args"][1], 0.5)
         a.query_dump_json()
 
-    def test_gsd_lte_gte_ne(self):
+    def test_view_azimuth_lte_gte_ne(self):
         a = QueryBuilder()
         a.view.azimuth.gte(0.75)
         a.view.azimuth.lte(0.25)
@@ -379,7 +388,7 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1], 0.5)
         a.query_dump_json()
 
-    def test_gsd_overwrite_equals(self):
+    def test_view_azimuth_overwrite_equals(self):
         a = QueryBuilder()
         a.view.azimuth.gte(0.25)
         a.view.azimuth.lte(0.75)
@@ -401,6 +410,129 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["op"], "and")
         self.assertEqual(a_dict["filter"]["args"][0]["op"], "=")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "view:azimuth")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], 0.5)
+        a.query_dump_json()
+
+    def test_gsd(self):
+        a = QueryBuilder()
+        a.gsd.gte(0.25)
+        a.gsd.lte(0.75)
+        a_dict = a.query_dump()
+
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["op"], ">=")
+        self.assertEqual(
+            a_dict["filter"]["args"][0]["args"][0]["args"][0]["property"],
+            "gsd",
+        )
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][1], 0.25)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["op"], "<=")
+        self.assertEqual(
+            a_dict["filter"]["args"][0]["args"][1]["args"][0]["property"],
+            "gsd",
+        )
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1], 0.75)
+        a.query_dump_json()
+
+    def test_gsd_gte_lte_ne(self):
+        a = QueryBuilder()
+        a.gsd.gte(0.25)
+        a.gsd.lte(0.75)
+        a.gsd.not_equals(0.5)
+        a_dict = a.query_dump()
+
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["op"], ">=")
+        self.assertEqual(
+            a_dict["filter"]["args"][0]["args"][0]["args"][0]["property"],
+            "gsd",
+        )
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][1], 0.25)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["op"], "<=")
+        self.assertEqual(
+            a_dict["filter"]["args"][0]["args"][1]["args"][0]["property"],
+            "gsd",
+        )
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1], 0.75)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][2]["op"], "!=")
+        self.assertEqual(
+            a_dict["filter"]["args"][0]["args"][2]["args"][0]["property"],
+            "gsd",
+        )
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][2]["args"][1], 0.5)
+        a.query_dump_json()
+
+    def test_gsd_lte_gte_ne(self):
+        a = QueryBuilder()
+        a.gsd.gte(0.75)
+        a.gsd.lte(0.25)
+        a.gsd.not_equals(0.5)
+        a_dict = a.query_dump()
+
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["op"], "or")
+        self.assertEqual(
+            a_dict["filter"]["args"][0]["args"][0]["args"][0]["op"], ">="
+        )
+        self.assertEqual(
+            a_dict["filter"]["args"][0]["args"][0]["args"][0]["args"][0]["property"],
+            "gsd",
+        )
+        self.assertEqual(
+            a_dict["filter"]["args"][0]["args"][0]["args"][0]["args"][1], 0.75
+        )
+        self.assertEqual(
+            a_dict["filter"]["args"][0]["args"][0]["args"][1]["op"], "<="
+        )
+        self.assertEqual(
+            a_dict["filter"]["args"][0]["args"][0]["args"][1]["args"][0]["property"],
+            "gsd",
+        )
+        self.assertEqual(
+            a_dict["filter"]["args"][0]["args"][0]["args"][1]["args"][1], 0.25
+        )
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["op"], "!=")
+        self.assertEqual(
+            a_dict["filter"]["args"][0]["args"][1]["args"][0]["property"],
+            "gsd",
+        )
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1], 0.5)
+        a.query_dump_json()
+
+    def test_gsd_overwrite_equals(self):
+        a = QueryBuilder()
+        a.gsd.gte(0.25)
+        a.gsd.lte(0.75)
+        a_dict = a.query_dump()
+
+        self.assertEqual(a_dict["filter-lang"], "cql2-json")
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["op"], ">=")
+        self.assertEqual(
+            a_dict["filter"]["args"][0]["args"][0]["args"][0]["property"],
+            "gsd",
+        )
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][1], 0.25)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["op"], "<=")
+        self.assertEqual(
+            a_dict["filter"]["args"][0]["args"][1]["args"][0]["property"],
+            "gsd",
+        )
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1], 0.75)
+
+        a.gsd.equals(0.5)
+        a_dict = a.query_dump()
+
+        self.assertEqual(a_dict["filter"]["op"], "and")
+        self.assertEqual(a_dict["filter"]["args"][0]["op"], "=")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "gsd")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1], 0.5)
         a.query_dump_json()
 
@@ -672,7 +804,7 @@ class STACTestCase(unittest.TestCase):
 
     def test_extension_observation_sar(self):
         a = QueryBuilder()
-        a.sar.observation_direction.equals(ObservationDirection.left)
+        a.sar.observation_direction.equals(SARObservationDirectionEnum.left)
         a_dict = a.query_dump()
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
         self.assertEqual(a_dict["filter"]["op"], "and")
@@ -683,7 +815,7 @@ class STACTestCase(unittest.TestCase):
 
     def test_extension_observation_sar_ne(self):
         a = QueryBuilder()
-        a.sar.observation_direction.not_equals(ObservationDirection.left)
+        a.sar.observation_direction.not_equals(SARObservationDirectionEnum.left)
         a_dict = a.query_dump()
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
         self.assertEqual(a_dict["filter"]["op"], "and")
@@ -705,7 +837,7 @@ class STACTestCase(unittest.TestCase):
 
     def test_extension_observation_sar_set(self):
         a = QueryBuilder()
-        a.sar.observation_direction.in_set([ObservationDirection.left])
+        a.sar.observation_direction.in_set([SARObservationDirectionEnum.left])
         a_dict = a.query_dump()
         self.assertEqual(a_dict["filter-lang"], "cql2-json")
         self.assertEqual(a_dict["filter"]["op"], "and")
@@ -713,7 +845,7 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "sar:observation_direction")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1][0], "left")
         b = QueryBuilder()
-        b.sar.observation_direction.in_set([ObservationDirection.left, ObservationDirection.right])
+        b.sar.observation_direction.in_set([SARObservationDirectionEnum.left, SARObservationDirectionEnum.right])
         b_dict = b.query_dump()
         self.assertEqual(b_dict["filter"]["args"][0]["args"][1][0], "left")
         self.assertEqual(b_dict["filter"]["args"][0]["args"][1][1], "right")
@@ -738,7 +870,7 @@ class STACTestCase(unittest.TestCase):
 
     def test_filter_enum_serializable(self):
         a = QueryBuilder()
-        a.filter((a.view.azimuth > 9) | (a.sar.observation_direction == ObservationDirection.left))
+        a.filter((a.view.azimuth > 9) | (a.sar.observation_direction == SARObservationDirectionEnum.left))
         a_dict = a.query_dump()
         json.dumps(a.query_dump())
         self.assertIsNotNone(a.query_dump_json())
@@ -748,7 +880,7 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][0]["property"], "view:azimuth")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["args"][1], 9)
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][0]["property"], "sar:observation_direction")
-        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1], ObservationDirection.left)
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1]["args"][1], SARObservationDirectionEnum.left)
 
     def test_boolean(self):
         a = QueryBuilder()
@@ -768,7 +900,7 @@ class STACTestCase(unittest.TestCase):
         a.geometry.intersects(Point(45, 65))
         a.proj.geometry.intersects(Point(22, 44))
         a.platform.equals("Umbra-09")
-        a.mlm.framework.equals(Framework.Hugging_Face)
+        a.mlm.framework.equals(MLMFrameworkEnum.Hugging_Face)
 
         dumped_json = a.query_dump_json()
         self.assertIn("2024-01-05T00:01:02+00:00", dumped_json)
@@ -800,7 +932,7 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["op"], "isNull")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "mlm:framework")
         self.assertEqual(1, len(a_dict["filter"]["args"][0]["args"]))
-        a.mlm.framework.in_set([Framework.Hugging_Face, Framework.JAX])
+        a.mlm.framework.in_set([MLMFrameworkEnum.Hugging_Face, MLMFrameworkEnum.JAX])
         a_dict = a.query_dump()
         self.assertEqual(a_dict["filter"]["args"][0]["op"], "in")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "mlm:framework")
@@ -810,12 +942,12 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["op"], "isNull")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "mlm:framework")
         self.assertEqual(1, len(a_dict["filter"]["args"][0]["args"]))
-        a.mlm.framework.in_set([Framework.Hugging_Face, Framework.JAX])
+        a.mlm.framework.in_set([MLMFrameworkEnum.Hugging_Face, MLMFrameworkEnum.JAX])
         a_dict = a.query_dump()
         self.assertEqual(a_dict["filter"]["args"][0]["op"], "in")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "mlm:framework")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1], ['Hugging Face', 'JAX'])
-        a.mlm.framework.not_in_set([Framework.Hugging_Face, Framework.JAX])
+        a.mlm.framework.not_in_set([MLMFrameworkEnum.Hugging_Face, MLMFrameworkEnum.JAX])
         a_dict = a.query_dump()
         self.assertEqual(a_dict["filter"]["args"][0]["op"], "not")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["op"], "in")
@@ -954,6 +1086,85 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "collection")
         self.assertEqual(a_dict["filter"]["args"][0]["args"][1], str("landsat-c2-l2"))
         a.query_dump_json()
+
+
+class TestExtensionEnums(unittest.TestCase):
+    def test_planet_enum(self):
+        a = QueryBuilder()
+        a.pl.item_type.equals(PLItemTypeEnum.PSOrthoTile)
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "pl:item_type")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], "PSOrthoTile")
+
+    def test_planet_publishing_stage_enum(self):
+        a = QueryBuilder()
+        a.pl.publishing_stage.equals(PLPublishingStageEnum.preview)
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "pl:publishing_stage")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], "preview")
+
+    def test_planet_quality_category_enum(self):
+        a = QueryBuilder()
+        a.pl.quality_category.equals(PLQualityCategoryEnum.standard)
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "pl:quality_category")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], "standard")
+
+    def test_eo_common_name_enum(self):
+        a = QueryBuilder()
+        a.eo.common_name.equals(EOCommonNameEnum.nir)
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "eo:common_name")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], "nir")
+
+    def test_landsat_collection_category_enum(self):
+        a = QueryBuilder()
+        a.landsat.collection_category.equals(LandsatCollectionCategoryEnum.A1)
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "landsat:collection_category")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], "A1")
+
+    def test_landsat_correction_enum(self):
+        a = QueryBuilder()
+        a.landsat.correction.equals(LandsatCorrectionEnum.L1TP)
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "landsat:correction")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], "L1TP")
+
+    def test_mlm_accelerator_enum(self):
+        a = QueryBuilder()
+        a.mlm.accelerator.equals(MLMAcceleratorEnum.cuda)
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "mlm:accelerator")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], "cuda")
+
+    def test_mlm_framework_enum(self):
+        a = QueryBuilder()
+        a.mlm.framework.equals(MLMFrameworkEnum.PyTorch)
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "mlm:framework")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], "PyTorch")
+
+    def test_sar_frequency_band_enum(self):
+        a = QueryBuilder()
+        a.sar.frequency_band.equals(SARFrequencyBandEnum.X)
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "sar:frequency_band")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], "X")
+
+    def test_sar_observation_direction_enum(self):
+        a = QueryBuilder()
+        a.sar.observation_direction.equals(SARObservationDirectionEnum.left)
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "sar:observation_direction")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], "left")
+
+    def test_sat_orbit_state_enum(self):
+        a = QueryBuilder()
+        a.sat.orbit_state.equals(SATOrbitStateEnum.ascending)
+        a_dict = a.query_dump()
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][0]["property"], "sat:orbit_state")
+        self.assertEqual(a_dict["filter"]["args"][0]["args"][1], "ascending")
 
 
 if __name__ == '__main__':

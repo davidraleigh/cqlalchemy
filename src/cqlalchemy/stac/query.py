@@ -1,6 +1,7 @@
-# This file is generated with version 0.0.12 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
+# This file is generated with version 0.0.14 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
 #
 # extensions included:
+# https://planetlabs.github.io/stac-extension/v1.0.0-beta.3/schema.json#
 # https://stac-extensions.github.io/eo/v2.0.0/schema.json#
 # https://stac-extensions.github.io/landsat/v2.0.0/schema.json
 # https://stac-extensions.github.io/mlm/v1.4.0/schema.json
@@ -8,6 +9,7 @@
 # https://stac-extensions.github.io/sar/v1.2.0/schema.json
 # https://stac-extensions.github.io/sat/v1.1.0/schema.json
 # https://stac-extensions.github.io/view/v1.0.0/schema.json#
+# https://umbra-space.github.io/umbra-stac-extension/json-schema/v1.0.0/schema.json#
 #
 # ignored fields are:
 # None
@@ -15,7 +17,7 @@
 # unique Enum classes generated:
 # True
 #
-# generated on 2025-05-28
+# generated on 2025-06-09
 
 from __future__ import annotations
 
@@ -337,7 +339,7 @@ class _StringQuery(_BaseString):
             QueryBuilder: query builder for additional queries to add
         """
         self._clear_values()
-        self._eq_value = str(value)
+        self._eq_value = self._adjust_enum(value)
         return self._parent_obj
 
     def not_equals(self, value: str) -> QueryBuilder:
@@ -351,7 +353,7 @@ class _StringQuery(_BaseString):
             QueryBuilder: query builder for additional queries to add
         """
         self._clear_values()
-        self._ne_value = str(value)
+        self._ne_value = self._adjust_enum(value)
         return self._parent_obj
 
     def in_set(self, values: list[str]) -> QueryBuilder:
@@ -365,7 +367,7 @@ class _StringQuery(_BaseString):
             QueryBuilder: query builder for additional queries to add
         """
         self._clear_values()
-        self._in_values = [str(x) for x in values]
+        self._in_values = [self._adjust_enum(x) for x in values]
         return self._parent_obj
 
     def not_in_set(self, values: list[str]) -> QueryBuilder:
@@ -379,7 +381,7 @@ class _StringQuery(_BaseString):
             QueryBuilder: query builder for additional queries to add
         """
         self._clear_values()
-        self._not_in_values = [str(x) for x in values]
+        self._not_in_values = [self._adjust_enum(x) for x in values]
         return self._parent_obj
 
     def like(self, value: str) -> QueryBuilder:
@@ -393,7 +395,7 @@ class _StringQuery(_BaseString):
             QueryBuilder: query builder for additional queries to add
         """
         self._clear_values()
-        self._like_value = value
+        self._like_value = self._adjust_enum(value)
         return self._parent_obj
 
     def _clear_values(self):
@@ -402,6 +404,12 @@ class _StringQuery(_BaseString):
         self._eq_value = None
         self._ne_value = None
         self._like_value = None
+
+    @staticmethod
+    def _adjust_enum(value):
+        if isinstance(value, Enum):
+            return value.value
+        return str(value)
 
 
 class _Query(_QueryBase):
@@ -721,6 +729,7 @@ class _NumberQuery(_Query):
     def _check(self, value):
         if self._is_int and not isinstance(value, int) and math.floor(value) != value:
             raise ValueError(f"for integer type, must use ints. {value} is not an int")
+        self._check_range(value)
 
 
 class _SpatialQuery(_QueryBase):
@@ -791,9 +800,259 @@ class _Extension:
         return args
 
 
-class CommonName(str, Enum):
+class PLItemTypeEnum(str, Enum):
     """
-    Common Name Enum
+    PL Item Type Enum
+    """
+
+    Landsat8L1G = "Landsat8L1G"
+    PSOrthoTile = "PSOrthoTile"
+    PSScene = "PSScene"
+    PSScene3Band = "PSScene3Band"
+    PSScene4Band = "PSScene4Band"
+    MOD09GA = "MOD09GA"
+    MOD09GQ = "MOD09GQ"
+    MYD09GA = "MYD09GA"
+    MYD09GQ = "MYD09GQ"
+    REOrthoTile = "REOrthoTile"
+    REScene = "REScene"
+    Sentinel1 = "Sentinel1"
+    Sentinel2L1C = "Sentinel2L1C"
+    SkySatCollect = "SkySatCollect"
+    SkySatScene = "SkySatScene"
+    SkySatVideo = "SkySatVideo"
+
+
+class _PLItemTypeEnumQuery(_EnumQuery):
+    """
+    PL Item Type Enum Query Interface
+    """
+
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
+        o = _PLItemTypeEnumQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: PLItemTypeEnum) -> QueryBuilder:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def not_equals(self, value: PLItemTypeEnum) -> QueryBuilder:
+        self._check([value.value])
+        self._ne_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[PLItemTypeEnum]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+    def not_in_set(self, values: list[PLItemTypeEnum]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._not_in_values = extracted
+        return self._parent_obj
+
+    def Landsat8L1G(self) -> QueryBuilder:
+        return self.equals(PLItemTypeEnum.Landsat8L1G)
+
+    def PSOrthoTile(self) -> QueryBuilder:
+        return self.equals(PLItemTypeEnum.PSOrthoTile)
+
+    def PSScene(self) -> QueryBuilder:
+        return self.equals(PLItemTypeEnum.PSScene)
+
+    def PSScene3Band(self) -> QueryBuilder:
+        return self.equals(PLItemTypeEnum.PSScene3Band)
+
+    def PSScene4Band(self) -> QueryBuilder:
+        return self.equals(PLItemTypeEnum.PSScene4Band)
+
+    def MOD09GA(self) -> QueryBuilder:
+        return self.equals(PLItemTypeEnum.MOD09GA)
+
+    def MOD09GQ(self) -> QueryBuilder:
+        return self.equals(PLItemTypeEnum.MOD09GQ)
+
+    def MYD09GA(self) -> QueryBuilder:
+        return self.equals(PLItemTypeEnum.MYD09GA)
+
+    def MYD09GQ(self) -> QueryBuilder:
+        return self.equals(PLItemTypeEnum.MYD09GQ)
+
+    def REOrthoTile(self) -> QueryBuilder:
+        return self.equals(PLItemTypeEnum.REOrthoTile)
+
+    def REScene(self) -> QueryBuilder:
+        return self.equals(PLItemTypeEnum.REScene)
+
+    def Sentinel1(self) -> QueryBuilder:
+        return self.equals(PLItemTypeEnum.Sentinel1)
+
+    def Sentinel2L1C(self) -> QueryBuilder:
+        return self.equals(PLItemTypeEnum.Sentinel2L1C)
+
+    def SkySatCollect(self) -> QueryBuilder:
+        return self.equals(PLItemTypeEnum.SkySatCollect)
+
+    def SkySatScene(self) -> QueryBuilder:
+        return self.equals(PLItemTypeEnum.SkySatScene)
+
+    def SkySatVideo(self) -> QueryBuilder:
+        return self.equals(PLItemTypeEnum.SkySatVideo)
+
+
+class PLPublishingStageEnum(str, Enum):
+    """
+    PL Publishing Stage Enum
+    """
+
+    preview = "preview"
+    standard = "standard"
+    finalized = "finalized"
+
+
+class _PLPublishingStageEnumQuery(_EnumQuery):
+    """
+    PL Publishing Stage Enum Query Interface
+    """
+
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
+        o = _PLPublishingStageEnumQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: PLPublishingStageEnum) -> QueryBuilder:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def not_equals(self, value: PLPublishingStageEnum) -> QueryBuilder:
+        self._check([value.value])
+        self._ne_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[PLPublishingStageEnum]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+    def not_in_set(self, values: list[PLPublishingStageEnum]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._not_in_values = extracted
+        return self._parent_obj
+
+    def preview(self) -> QueryBuilder:
+        return self.equals(PLPublishingStageEnum.preview)
+
+    def standard(self) -> QueryBuilder:
+        return self.equals(PLPublishingStageEnum.standard)
+
+    def finalized(self) -> QueryBuilder:
+        return self.equals(PLPublishingStageEnum.finalized)
+
+
+class PLQualityCategoryEnum(str, Enum):
+    """
+    PL Quality Category Enum
+    """
+
+    standard = "standard"
+    test = "test"
+
+
+class _PLQualityCategoryEnumQuery(_EnumQuery):
+    """
+    PL Quality Category Enum Query Interface
+    """
+
+    @classmethod
+    def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
+        o = _PLQualityCategoryEnumQuery(field_name, parent_obj)
+        o._enum_values = set(enum_fields)
+        return o
+
+    def equals(self, value: PLQualityCategoryEnum) -> QueryBuilder:
+        self._check([value.value])
+        self._eq_value = value.value
+        return self._parent_obj
+
+    def not_equals(self, value: PLQualityCategoryEnum) -> QueryBuilder:
+        self._check([value.value])
+        self._ne_value = value.value
+        return self._parent_obj
+
+    def in_set(self, values: list[PLQualityCategoryEnum]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._in_values = extracted
+        return self._parent_obj
+
+    def not_in_set(self, values: list[PLQualityCategoryEnum]) -> QueryBuilder:
+        extracted = [x.value for x in values]
+        self._check(extracted)
+        self._not_in_values = extracted
+        return self._parent_obj
+
+    def standard(self) -> QueryBuilder:
+        return self.equals(PLQualityCategoryEnum.standard)
+
+    def test(self) -> QueryBuilder:
+        return self.equals(PLQualityCategoryEnum.test)
+
+
+class _PlExtension(_Extension):
+    """
+    STAC Planet Labs Extension for STAC Items and STAC Collections. Validates the fields, doesn't require specific assets to be present.
+
+    ...
+
+    Attributes
+    ----------
+    black_fill: _NumberQuery
+        number query interface for searching items by the pl:black_fill field where the minimum value is 0 and the max value is 100. Float input.
+    clear_percent: _NumberQuery
+        number query interface for searching items by the pl:clear_percent field where the minimum value is 0 and the max value is 100. Float input.
+    grid_cell : _StringQuery
+        string query interface for searching items by the pl:grid_cell field
+    ground_control : _BooleanQuery
+        enum query interface for searching items by the pl:ground_control field
+    ground_control_ratio: _NumberQuery
+        number query interface for searching items by the pl:ground_control_ratio field where the minimum value is 0 and the max value is 1. Float input.
+    item_type : _PLItemTypeEnumQuery
+        enum query interface for searching items by the pl:item_type field
+    pixel_resolution: _NumberQuery
+        number query interface for searching items by the pl:pixel_resolution field. Float input.
+    publishing_stage : _PLPublishingStageEnumQuery
+        enum query interface for searching items by the pl:publishing_stage field
+    quality_category : _PLQualityCategoryEnumQuery
+        enum query interface for searching items by the pl:quality_category field
+    strip_id : _StringQuery
+        string query interface for searching items by the pl:strip_id field
+    """
+    def __init__(self, query_block: QueryBuilder):
+        super().__init__(query_block)
+        self.black_fill = _NumberQuery.init_with_limits("pl:black_fill", query_block, min_value=0, max_value=100, is_int=False)
+        self.clear_percent = _NumberQuery.init_with_limits("pl:clear_percent", query_block, min_value=0, max_value=100, is_int=False)
+        self.grid_cell = _StringQuery("pl:grid_cell", query_block)
+        self.ground_control = _BooleanQuery("pl:ground_control", query_block)
+        self.ground_control_ratio = _NumberQuery.init_with_limits("pl:ground_control_ratio", query_block, min_value=0, max_value=1, is_int=False)
+        self.item_type = _PLItemTypeEnumQuery.init_enums("pl:item_type", query_block, [x.value for x in PLItemTypeEnum])
+        self.pixel_resolution = _NumberQuery.init_with_limits("pl:pixel_resolution", query_block, min_value=None, max_value=None, is_int=False)
+        self.publishing_stage = _PLPublishingStageEnumQuery.init_enums("pl:publishing_stage", query_block, [x.value for x in PLPublishingStageEnum])
+        self.quality_category = _PLQualityCategoryEnumQuery.init_enums("pl:quality_category", query_block, [x.value for x in PLQualityCategoryEnum])
+        self.strip_id = _StringQuery("pl:strip_id", query_block)
+
+
+class EOCommonNameEnum(str, Enum):
+    """
+    EO Common Name Enum
     """
 
     pan = "pan"
@@ -818,99 +1077,99 @@ class CommonName(str, Enum):
     lwir12 = "lwir12"
 
 
-class _CommonNameQuery(_EnumQuery):
+class _EOCommonNameEnumQuery(_EnumQuery):
     """
-    Common Name Enum Query Interface
+    EO Common Name Enum Query Interface
     Common Name of the band
     """
 
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _CommonNameQuery(field_name, parent_obj)
+        o = _EOCommonNameEnumQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: CommonName) -> QueryBuilder:
+    def equals(self, value: EOCommonNameEnum) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def not_equals(self, value: CommonName) -> QueryBuilder:
+    def not_equals(self, value: EOCommonNameEnum) -> QueryBuilder:
         self._check([value.value])
         self._ne_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[CommonName]) -> QueryBuilder:
+    def in_set(self, values: list[EOCommonNameEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
 
-    def not_in_set(self, values: list[CommonName]) -> QueryBuilder:
+    def not_in_set(self, values: list[EOCommonNameEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._not_in_values = extracted
         return self._parent_obj
 
     def pan(self) -> QueryBuilder:
-        return self.equals(CommonName.pan)
+        return self.equals(EOCommonNameEnum.pan)
 
     def coastal(self) -> QueryBuilder:
-        return self.equals(CommonName.coastal)
+        return self.equals(EOCommonNameEnum.coastal)
 
     def blue(self) -> QueryBuilder:
-        return self.equals(CommonName.blue)
+        return self.equals(EOCommonNameEnum.blue)
 
     def green(self) -> QueryBuilder:
-        return self.equals(CommonName.green)
+        return self.equals(EOCommonNameEnum.green)
 
     def green05(self) -> QueryBuilder:
-        return self.equals(CommonName.green05)
+        return self.equals(EOCommonNameEnum.green05)
 
     def yellow(self) -> QueryBuilder:
-        return self.equals(CommonName.yellow)
+        return self.equals(EOCommonNameEnum.yellow)
 
     def red(self) -> QueryBuilder:
-        return self.equals(CommonName.red)
+        return self.equals(EOCommonNameEnum.red)
 
     def rededge(self) -> QueryBuilder:
-        return self.equals(CommonName.rededge)
+        return self.equals(EOCommonNameEnum.rededge)
 
     def rededge071(self) -> QueryBuilder:
-        return self.equals(CommonName.rededge071)
+        return self.equals(EOCommonNameEnum.rededge071)
 
     def rededge075(self) -> QueryBuilder:
-        return self.equals(CommonName.rededge075)
+        return self.equals(EOCommonNameEnum.rededge075)
 
     def rededge078(self) -> QueryBuilder:
-        return self.equals(CommonName.rededge078)
+        return self.equals(EOCommonNameEnum.rededge078)
 
     def nir(self) -> QueryBuilder:
-        return self.equals(CommonName.nir)
+        return self.equals(EOCommonNameEnum.nir)
 
     def nir08(self) -> QueryBuilder:
-        return self.equals(CommonName.nir08)
+        return self.equals(EOCommonNameEnum.nir08)
 
     def nir09(self) -> QueryBuilder:
-        return self.equals(CommonName.nir09)
+        return self.equals(EOCommonNameEnum.nir09)
 
     def cirrus(self) -> QueryBuilder:
-        return self.equals(CommonName.cirrus)
+        return self.equals(EOCommonNameEnum.cirrus)
 
     def swir16(self) -> QueryBuilder:
-        return self.equals(CommonName.swir16)
+        return self.equals(EOCommonNameEnum.swir16)
 
     def swir22(self) -> QueryBuilder:
-        return self.equals(CommonName.swir22)
+        return self.equals(EOCommonNameEnum.swir22)
 
     def lwir(self) -> QueryBuilder:
-        return self.equals(CommonName.lwir)
+        return self.equals(EOCommonNameEnum.lwir)
 
     def lwir11(self) -> QueryBuilder:
-        return self.equals(CommonName.lwir11)
+        return self.equals(EOCommonNameEnum.lwir11)
 
     def lwir12(self) -> QueryBuilder:
-        return self.equals(CommonName.lwir12)
+        return self.equals(EOCommonNameEnum.lwir12)
 
 
 class _EOExtension(_Extension):
@@ -925,7 +1184,7 @@ class _EOExtension(_Extension):
         number query interface for searching items by the eo:center_wavelength field. Float input.
     cloud_cover: _NumberQuery
         number query interface for searching items by the eo:cloud_cover field where the minimum value is 0 and the max value is 100. Float input.
-    common_name : _CommonNameQuery
+    common_name : _EOCommonNameEnumQuery
         enum query interface for searching items by the eo:common_name field
     full_width_half_max: _NumberQuery
         number query interface for searching items by the eo:full_width_half_max field. Float input.
@@ -938,15 +1197,15 @@ class _EOExtension(_Extension):
         super().__init__(query_block)
         self.center_wavelength = _NumberQuery.init_with_limits("eo:center_wavelength", query_block, min_value=None, max_value=None, is_int=False)
         self.cloud_cover = _NumberQuery.init_with_limits("eo:cloud_cover", query_block, min_value=0, max_value=100, is_int=False)
-        self.common_name = _CommonNameQuery.init_enums("eo:common_name", query_block, [x.value for x in CommonName])
+        self.common_name = _EOCommonNameEnumQuery.init_enums("eo:common_name", query_block, [x.value for x in EOCommonNameEnum])
         self.full_width_half_max = _NumberQuery.init_with_limits("eo:full_width_half_max", query_block, min_value=None, max_value=None, is_int=False)
         self.snow_cover = _NumberQuery.init_with_limits("eo:snow_cover", query_block, min_value=0, max_value=100, is_int=False)
         self.solar_illumination = _NumberQuery.init_with_limits("eo:solar_illumination", query_block, min_value=0, max_value=None, is_int=False)
 
 
-class CollectionCategory(str, Enum):
+class LandsatCollectionCategoryEnum(str, Enum):
     """
-    Collection Category Enum
+    Landsat Collection Category Enum
     """
 
     A1 = "A1"
@@ -956,59 +1215,59 @@ class CollectionCategory(str, Enum):
     RT = "RT"
 
 
-class _CollectionCategoryQuery(_EnumQuery):
+class _LandsatCollectionCategoryEnumQuery(_EnumQuery):
     """
-    Collection Category Enum Query Interface
+    Landsat Collection Category Enum Query Interface
     Collection Category
     """
 
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _CollectionCategoryQuery(field_name, parent_obj)
+        o = _LandsatCollectionCategoryEnumQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: CollectionCategory) -> QueryBuilder:
+    def equals(self, value: LandsatCollectionCategoryEnum) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def not_equals(self, value: CollectionCategory) -> QueryBuilder:
+    def not_equals(self, value: LandsatCollectionCategoryEnum) -> QueryBuilder:
         self._check([value.value])
         self._ne_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[CollectionCategory]) -> QueryBuilder:
+    def in_set(self, values: list[LandsatCollectionCategoryEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
 
-    def not_in_set(self, values: list[CollectionCategory]) -> QueryBuilder:
+    def not_in_set(self, values: list[LandsatCollectionCategoryEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._not_in_values = extracted
         return self._parent_obj
 
     def A1(self) -> QueryBuilder:
-        return self.equals(CollectionCategory.A1)
+        return self.equals(LandsatCollectionCategoryEnum.A1)
 
     def A2(self) -> QueryBuilder:
-        return self.equals(CollectionCategory.A2)
+        return self.equals(LandsatCollectionCategoryEnum.A2)
 
     def T1(self) -> QueryBuilder:
-        return self.equals(CollectionCategory.T1)
+        return self.equals(LandsatCollectionCategoryEnum.T1)
 
     def T2(self) -> QueryBuilder:
-        return self.equals(CollectionCategory.T2)
+        return self.equals(LandsatCollectionCategoryEnum.T2)
 
     def RT(self) -> QueryBuilder:
-        return self.equals(CollectionCategory.RT)
+        return self.equals(LandsatCollectionCategoryEnum.RT)
 
 
-class Correction(str, Enum):
+class LandsatCorrectionEnum(str, Enum):
     """
-    Correction Enum
+    Landsat Correction Enum
     """
 
     L1TP = "L1TP"
@@ -1018,54 +1277,54 @@ class Correction(str, Enum):
     L2SP = "L2SP"
 
 
-class _CorrectionQuery(_EnumQuery):
+class _LandsatCorrectionEnumQuery(_EnumQuery):
     """
-    Correction Enum Query Interface
+    Landsat Correction Enum Query Interface
     Product Correction Level
     """
 
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _CorrectionQuery(field_name, parent_obj)
+        o = _LandsatCorrectionEnumQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: Correction) -> QueryBuilder:
+    def equals(self, value: LandsatCorrectionEnum) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def not_equals(self, value: Correction) -> QueryBuilder:
+    def not_equals(self, value: LandsatCorrectionEnum) -> QueryBuilder:
         self._check([value.value])
         self._ne_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[Correction]) -> QueryBuilder:
+    def in_set(self, values: list[LandsatCorrectionEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
 
-    def not_in_set(self, values: list[Correction]) -> QueryBuilder:
+    def not_in_set(self, values: list[LandsatCorrectionEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._not_in_values = extracted
         return self._parent_obj
 
     def L1TP(self) -> QueryBuilder:
-        return self.equals(Correction.L1TP)
+        return self.equals(LandsatCorrectionEnum.L1TP)
 
     def L1GT(self) -> QueryBuilder:
-        return self.equals(Correction.L1GT)
+        return self.equals(LandsatCorrectionEnum.L1GT)
 
     def L1GS(self) -> QueryBuilder:
-        return self.equals(Correction.L1GS)
+        return self.equals(LandsatCorrectionEnum.L1GS)
 
     def L2SR(self) -> QueryBuilder:
-        return self.equals(Correction.L2SR)
+        return self.equals(LandsatCorrectionEnum.L2SR)
 
     def L2SP(self) -> QueryBuilder:
-        return self.equals(Correction.L2SP)
+        return self.equals(LandsatCorrectionEnum.L2SP)
 
 
 class _LandsatExtension(_Extension):
@@ -1078,11 +1337,11 @@ class _LandsatExtension(_Extension):
     ----------
     cloud_cover_land: _NumberQuery
         number query interface for searching items by the landsat:cloud_cover_land field where the minimum value is -1 and the max value is 100. Float input.
-    collection_category : _CollectionCategoryQuery
+    collection_category : _LandsatCollectionCategoryEnumQuery
         enum query interface for searching items by the landsat:collection_category field
     collection_number : _StringQuery
         string query interface for searching items by the landsat:collection_number field
-    correction : _CorrectionQuery
+    correction : _LandsatCorrectionEnumQuery
         enum query interface for searching items by the landsat:correction field
     product_generated : _DateQuery
         datetime query interface for searching items by the landsat:product_generated field
@@ -1098,9 +1357,9 @@ class _LandsatExtension(_Extension):
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
         self.cloud_cover_land = _NumberQuery.init_with_limits("landsat:cloud_cover_land", query_block, min_value=-1, max_value=100, is_int=False)
-        self.collection_category = _CollectionCategoryQuery.init_enums("landsat:collection_category", query_block, [x.value for x in CollectionCategory])
+        self.collection_category = _LandsatCollectionCategoryEnumQuery.init_enums("landsat:collection_category", query_block, [x.value for x in LandsatCollectionCategoryEnum])
         self.collection_number = _StringQuery("landsat:collection_number", query_block)
-        self.correction = _CorrectionQuery.init_enums("landsat:correction", query_block, [x.value for x in Correction])
+        self.correction = _LandsatCorrectionEnumQuery.init_enums("landsat:correction", query_block, [x.value for x in LandsatCorrectionEnum])
         self.product_generated = _DateQuery("landsat:product_generated", query_block)
         self.scene_id = _StringQuery("landsat:scene_id", query_block)
         self.wrs_path = _StringQuery("landsat:wrs_path", query_block)
@@ -1108,9 +1367,9 @@ class _LandsatExtension(_Extension):
         self.wrs_type = _StringQuery("landsat:wrs_type", query_block)
 
 
-class Accelerator(str, Enum):
+class MLMAcceleratorEnum(str, Enum):
     """
-    Accelerator Enum
+    MLM Accelerator Enum
     """
 
     amd64 = "amd64"
@@ -1122,64 +1381,64 @@ class Accelerator(str, Enum):
     macos_arm = "macos-arm"
 
 
-class _AcceleratorQuery(_EnumQuery):
+class _MLMAcceleratorEnumQuery(_EnumQuery):
     """
-    Accelerator Enum Query Interface
+    MLM Accelerator Enum Query Interface
     """
 
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _AcceleratorQuery(field_name, parent_obj)
+        o = _MLMAcceleratorEnumQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: Accelerator) -> QueryBuilder:
+    def equals(self, value: MLMAcceleratorEnum) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def not_equals(self, value: Accelerator) -> QueryBuilder:
+    def not_equals(self, value: MLMAcceleratorEnum) -> QueryBuilder:
         self._check([value.value])
         self._ne_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[Accelerator]) -> QueryBuilder:
+    def in_set(self, values: list[MLMAcceleratorEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
 
-    def not_in_set(self, values: list[Accelerator]) -> QueryBuilder:
+    def not_in_set(self, values: list[MLMAcceleratorEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._not_in_values = extracted
         return self._parent_obj
 
     def amd64(self) -> QueryBuilder:
-        return self.equals(Accelerator.amd64)
+        return self.equals(MLMAcceleratorEnum.amd64)
 
     def cuda(self) -> QueryBuilder:
-        return self.equals(Accelerator.cuda)
+        return self.equals(MLMAcceleratorEnum.cuda)
 
     def xla(self) -> QueryBuilder:
-        return self.equals(Accelerator.xla)
+        return self.equals(MLMAcceleratorEnum.xla)
 
     def amd_rocm(self) -> QueryBuilder:
-        return self.equals(Accelerator.amd_rocm)
+        return self.equals(MLMAcceleratorEnum.amd_rocm)
 
     def intel_ipex_cpu(self) -> QueryBuilder:
-        return self.equals(Accelerator.intel_ipex_cpu)
+        return self.equals(MLMAcceleratorEnum.intel_ipex_cpu)
 
     def intel_ipex_gpu(self) -> QueryBuilder:
-        return self.equals(Accelerator.intel_ipex_gpu)
+        return self.equals(MLMAcceleratorEnum.intel_ipex_gpu)
 
     def macos_arm(self) -> QueryBuilder:
-        return self.equals(Accelerator.macos_arm)
+        return self.equals(MLMAcceleratorEnum.macos_arm)
 
 
-class Framework(str, Enum):
+class MLMFrameworkEnum(str, Enum):
     """
-    Framework Enum
+    MLM Framework Enum
     """
 
     PyTorch = "PyTorch"
@@ -1199,84 +1458,84 @@ class Framework(str, Enum):
     Paddle = "Paddle"
 
 
-class _FrameworkQuery(_EnumQuery):
+class _MLMFrameworkEnumQuery(_EnumQuery):
     """
-    Framework Enum Query Interface
+    MLM Framework Enum Query Interface
     Any other framework name to allow extension. Enum names should be preferred when possible to allow better portability.
     """
 
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _FrameworkQuery(field_name, parent_obj)
+        o = _MLMFrameworkEnumQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: Framework) -> QueryBuilder:
+    def equals(self, value: MLMFrameworkEnum) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def not_equals(self, value: Framework) -> QueryBuilder:
+    def not_equals(self, value: MLMFrameworkEnum) -> QueryBuilder:
         self._check([value.value])
         self._ne_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[Framework]) -> QueryBuilder:
+    def in_set(self, values: list[MLMFrameworkEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
 
-    def not_in_set(self, values: list[Framework]) -> QueryBuilder:
+    def not_in_set(self, values: list[MLMFrameworkEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._not_in_values = extracted
         return self._parent_obj
 
     def PyTorch(self) -> QueryBuilder:
-        return self.equals(Framework.PyTorch)
+        return self.equals(MLMFrameworkEnum.PyTorch)
 
     def TensorFlow(self) -> QueryBuilder:
-        return self.equals(Framework.TensorFlow)
+        return self.equals(MLMFrameworkEnum.TensorFlow)
 
     def scikit_learn(self) -> QueryBuilder:
-        return self.equals(Framework.scikit_learn)
+        return self.equals(MLMFrameworkEnum.scikit_learn)
 
     def Hugging_Face(self) -> QueryBuilder:
-        return self.equals(Framework.Hugging_Face)
+        return self.equals(MLMFrameworkEnum.Hugging_Face)
 
     def Keras(self) -> QueryBuilder:
-        return self.equals(Framework.Keras)
+        return self.equals(MLMFrameworkEnum.Keras)
 
     def ONNX(self) -> QueryBuilder:
-        return self.equals(Framework.ONNX)
+        return self.equals(MLMFrameworkEnum.ONNX)
 
     def rgee(self) -> QueryBuilder:
-        return self.equals(Framework.rgee)
+        return self.equals(MLMFrameworkEnum.rgee)
 
     def spatialRF(self) -> QueryBuilder:
-        return self.equals(Framework.spatialRF)
+        return self.equals(MLMFrameworkEnum.spatialRF)
 
     def JAX(self) -> QueryBuilder:
-        return self.equals(Framework.JAX)
+        return self.equals(MLMFrameworkEnum.JAX)
 
     def Flax(self) -> QueryBuilder:
-        return self.equals(Framework.Flax)
+        return self.equals(MLMFrameworkEnum.Flax)
 
     def MXNet(self) -> QueryBuilder:
-        return self.equals(Framework.MXNet)
+        return self.equals(MLMFrameworkEnum.MXNet)
 
     def Caffe(self) -> QueryBuilder:
-        return self.equals(Framework.Caffe)
+        return self.equals(MLMFrameworkEnum.Caffe)
 
     def PyMC(self) -> QueryBuilder:
-        return self.equals(Framework.PyMC)
+        return self.equals(MLMFrameworkEnum.PyMC)
 
     def Weka(self) -> QueryBuilder:
-        return self.equals(Framework.Weka)
+        return self.equals(MLMFrameworkEnum.Weka)
 
     def Paddle(self) -> QueryBuilder:
-        return self.equals(Framework.Paddle)
+        return self.equals(MLMFrameworkEnum.Paddle)
 
 
 class _MLMExtension(_Extension):
@@ -1287,7 +1546,7 @@ class _MLMExtension(_Extension):
 
     Attributes
     ----------
-    accelerator : _AcceleratorQuery
+    accelerator : _MLMAcceleratorEnumQuery
         enum query interface for searching items by the mlm:accelerator field
     accelerator_constrained : _BooleanQuery
         enum query interface for searching items by the mlm:accelerator_constrained field
@@ -1303,7 +1562,7 @@ class _MLMExtension(_Extension):
         number query interface for searching items by the mlm:batch_size_suggestion field where the minimum value is 0. Float input.. Integer input.
     compile_method : _StringQuery
         string query interface for searching items by the mlm:compile_method field
-    framework : _FrameworkQuery
+    framework : _MLMFrameworkEnumQuery
         enum query interface for searching items by the mlm:framework field
     framework_version : _StringQuery
         string query interface for searching items by the mlm:framework_version field
@@ -1328,7 +1587,7 @@ class _MLMExtension(_Extension):
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
-        self.accelerator = _AcceleratorQuery.init_enums("mlm:accelerator", query_block, [x.value for x in Accelerator])
+        self.accelerator = _MLMAcceleratorEnumQuery.init_enums("mlm:accelerator", query_block, [x.value for x in MLMAcceleratorEnum])
         self.accelerator_constrained = _BooleanQuery("mlm:accelerator_constrained", query_block)
         self.accelerator_count = _NumberQuery.init_with_limits("mlm:accelerator_count", query_block, min_value=1, max_value=None, is_int=True)
         self.accelerator_summary = _StringQuery("mlm:accelerator_summary", query_block)
@@ -1336,7 +1595,7 @@ class _MLMExtension(_Extension):
         self.artifact_type = _StringQuery("mlm:artifact_type", query_block)
         self.batch_size_suggestion = _NumberQuery.init_with_limits("mlm:batch_size_suggestion", query_block, min_value=0, max_value=None, is_int=True)
         self.compile_method = _StringQuery("mlm:compile_method", query_block)
-        self.framework = _FrameworkQuery.init_enums("mlm:framework", query_block, [x.value for x in Framework])
+        self.framework = _MLMFrameworkEnumQuery.init_enums("mlm:framework", query_block, [x.value for x in MLMFrameworkEnum])
         self.framework_version = _StringQuery("mlm:framework_version", query_block)
         self.hyperparameters = _NullCheck("mlm:hyperparameters", query_block)
         self.input = _NullCheck("mlm:input", query_block)
@@ -1383,9 +1642,9 @@ class _ProjExtension(_Extension):
         self.wkt2 = _StringQuery("proj:wkt2", query_block)
 
 
-class FrequencyBand(str, Enum):
+class SARFrequencyBandEnum(str, Enum):
     """
-    Frequency Band Enum
+    SAR Frequency Band Enum
     """
 
     P = "P"
@@ -1398,113 +1657,113 @@ class FrequencyBand(str, Enum):
     Ka = "Ka"
 
 
-class _FrequencyBandQuery(_EnumQuery):
+class _SARFrequencyBandEnumQuery(_EnumQuery):
     """
-    Frequency Band Enum Query Interface
+    SAR Frequency Band Enum Query Interface
     Frequency Band
     """
 
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _FrequencyBandQuery(field_name, parent_obj)
+        o = _SARFrequencyBandEnumQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: FrequencyBand) -> QueryBuilder:
+    def equals(self, value: SARFrequencyBandEnum) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def not_equals(self, value: FrequencyBand) -> QueryBuilder:
+    def not_equals(self, value: SARFrequencyBandEnum) -> QueryBuilder:
         self._check([value.value])
         self._ne_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[FrequencyBand]) -> QueryBuilder:
+    def in_set(self, values: list[SARFrequencyBandEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
 
-    def not_in_set(self, values: list[FrequencyBand]) -> QueryBuilder:
+    def not_in_set(self, values: list[SARFrequencyBandEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._not_in_values = extracted
         return self._parent_obj
 
     def P(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.P)
+        return self.equals(SARFrequencyBandEnum.P)
 
     def L(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.L)
+        return self.equals(SARFrequencyBandEnum.L)
 
     def S(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.S)
+        return self.equals(SARFrequencyBandEnum.S)
 
     def C(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.C)
+        return self.equals(SARFrequencyBandEnum.C)
 
     def X(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.X)
+        return self.equals(SARFrequencyBandEnum.X)
 
     def Ku(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.Ku)
+        return self.equals(SARFrequencyBandEnum.Ku)
 
     def K(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.K)
+        return self.equals(SARFrequencyBandEnum.K)
 
     def Ka(self) -> QueryBuilder:
-        return self.equals(FrequencyBand.Ka)
+        return self.equals(SARFrequencyBandEnum.Ka)
 
 
-class ObservationDirection(str, Enum):
+class SARObservationDirectionEnum(str, Enum):
     """
-    Observation Direction Enum
+    SAR Observation Direction Enum
     """
 
     left = "left"
     right = "right"
 
 
-class _ObservationDirectionQuery(_EnumQuery):
+class _SARObservationDirectionEnumQuery(_EnumQuery):
     """
-    Observation Direction Enum Query Interface
+    SAR Observation Direction Enum Query Interface
     Antenna pointing direction
     """
 
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _ObservationDirectionQuery(field_name, parent_obj)
+        o = _SARObservationDirectionEnumQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: ObservationDirection) -> QueryBuilder:
+    def equals(self, value: SARObservationDirectionEnum) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def not_equals(self, value: ObservationDirection) -> QueryBuilder:
+    def not_equals(self, value: SARObservationDirectionEnum) -> QueryBuilder:
         self._check([value.value])
         self._ne_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[ObservationDirection]) -> QueryBuilder:
+    def in_set(self, values: list[SARObservationDirectionEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
 
-    def not_in_set(self, values: list[ObservationDirection]) -> QueryBuilder:
+    def not_in_set(self, values: list[SARObservationDirectionEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._not_in_values = extracted
         return self._parent_obj
 
     def left(self) -> QueryBuilder:
-        return self.equals(ObservationDirection.left)
+        return self.equals(SARObservationDirectionEnum.left)
 
     def right(self) -> QueryBuilder:
-        return self.equals(ObservationDirection.right)
+        return self.equals(SARObservationDirectionEnum.right)
 
 
 class _SARExtension(_Extension):
@@ -1519,7 +1778,7 @@ class _SARExtension(_Extension):
         field can be checked to see if sar:beam_ids is null
     center_frequency: _NumberQuery
         number query interface for searching items by the sar:center_frequency field. Float input.
-    frequency_band : _FrequencyBandQuery
+    frequency_band : _SARFrequencyBandEnumQuery
         enum query interface for searching items by the sar:frequency_band field
     instrument_mode : _StringQuery
         string query interface for searching items by the sar:instrument_mode field
@@ -1529,7 +1788,7 @@ class _SARExtension(_Extension):
         number query interface for searching items by the sar:looks_equivalent_number field where the minimum value is 0. Float input.
     looks_range: _NumberQuery
         number query interface for searching items by the sar:looks_range field where the minimum value is 0. Float input.. Integer input.
-    observation_direction : _ObservationDirectionQuery
+    observation_direction : _SARObservationDirectionEnumQuery
         enum query interface for searching items by the sar:observation_direction field
     pixel_spacing_azimuth: _NumberQuery
         number query interface for searching items by the sar:pixel_spacing_azimuth field where the minimum value is 0. Float input.
@@ -1548,12 +1807,12 @@ class _SARExtension(_Extension):
         super().__init__(query_block)
         self.beam_ids = _NullCheck("sar:beam_ids", query_block)
         self.center_frequency = _NumberQuery.init_with_limits("sar:center_frequency", query_block, min_value=None, max_value=None, is_int=False)
-        self.frequency_band = _FrequencyBandQuery.init_enums("sar:frequency_band", query_block, [x.value for x in FrequencyBand])
+        self.frequency_band = _SARFrequencyBandEnumQuery.init_enums("sar:frequency_band", query_block, [x.value for x in SARFrequencyBandEnum])
         self.instrument_mode = _StringQuery("sar:instrument_mode", query_block)
         self.looks_azimuth = _NumberQuery.init_with_limits("sar:looks_azimuth", query_block, min_value=0, max_value=None, is_int=True)
         self.looks_equivalent_number = _NumberQuery.init_with_limits("sar:looks_equivalent_number", query_block, min_value=0, max_value=None, is_int=False)
         self.looks_range = _NumberQuery.init_with_limits("sar:looks_range", query_block, min_value=0, max_value=None, is_int=True)
-        self.observation_direction = _ObservationDirectionQuery.init_enums("sar:observation_direction", query_block, [x.value for x in ObservationDirection])
+        self.observation_direction = _SARObservationDirectionEnumQuery.init_enums("sar:observation_direction", query_block, [x.value for x in SARObservationDirectionEnum])
         self.pixel_spacing_azimuth = _NumberQuery.init_with_limits("sar:pixel_spacing_azimuth", query_block, min_value=0, max_value=None, is_int=False)
         self.pixel_spacing_range = _NumberQuery.init_with_limits("sar:pixel_spacing_range", query_block, min_value=0, max_value=None, is_int=False)
         self.polarizations = _NullCheck("sar:polarizations", query_block)
@@ -1562,9 +1821,9 @@ class _SARExtension(_Extension):
         self.resolution_range = _NumberQuery.init_with_limits("sar:resolution_range", query_block, min_value=0, max_value=None, is_int=False)
 
 
-class OrbitState(str, Enum):
+class SATOrbitStateEnum(str, Enum):
     """
-    Orbit State Enum
+    SAT Orbit State Enum
     """
 
     ascending = "ascending"
@@ -1572,48 +1831,48 @@ class OrbitState(str, Enum):
     geostationary = "geostationary"
 
 
-class _OrbitStateQuery(_EnumQuery):
+class _SATOrbitStateEnumQuery(_EnumQuery):
     """
-    Orbit State Enum Query Interface
+    SAT Orbit State Enum Query Interface
     Orbit State
     """
 
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _OrbitStateQuery(field_name, parent_obj)
+        o = _SATOrbitStateEnumQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: OrbitState) -> QueryBuilder:
+    def equals(self, value: SATOrbitStateEnum) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def not_equals(self, value: OrbitState) -> QueryBuilder:
+    def not_equals(self, value: SATOrbitStateEnum) -> QueryBuilder:
         self._check([value.value])
         self._ne_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[OrbitState]) -> QueryBuilder:
+    def in_set(self, values: list[SATOrbitStateEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
 
-    def not_in_set(self, values: list[OrbitState]) -> QueryBuilder:
+    def not_in_set(self, values: list[SATOrbitStateEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._not_in_values = extracted
         return self._parent_obj
 
     def ascending(self) -> QueryBuilder:
-        return self.equals(OrbitState.ascending)
+        return self.equals(SATOrbitStateEnum.ascending)
 
     def descending(self) -> QueryBuilder:
-        return self.equals(OrbitState.descending)
+        return self.equals(SATOrbitStateEnum.descending)
 
     def geostationary(self) -> QueryBuilder:
-        return self.equals(OrbitState.geostationary)
+        return self.equals(SATOrbitStateEnum.geostationary)
 
 
 class _SatExtension(_Extension):
@@ -1630,7 +1889,7 @@ class _SatExtension(_Extension):
         datetime query interface for searching items by the sat:anx_datetime field
     orbit_cycle: _NumberQuery
         number query interface for searching items by the sat:orbit_cycle field where the minimum value is 1. Float input.. Integer input.
-    orbit_state : _OrbitStateQuery
+    orbit_state : _SATOrbitStateEnumQuery
         enum query interface for searching items by the sat:orbit_state field
     orbit_state_vectors : _NullCheck
         field can be checked to see if sat:orbit_state_vectors is null
@@ -1644,7 +1903,7 @@ class _SatExtension(_Extension):
         self.absolute_orbit = _NumberQuery.init_with_limits("sat:absolute_orbit", query_block, min_value=1, max_value=None, is_int=True)
         self.anx_datetime = _DateQuery("sat:anx_datetime", query_block)
         self.orbit_cycle = _NumberQuery.init_with_limits("sat:orbit_cycle", query_block, min_value=1, max_value=None, is_int=True)
-        self.orbit_state = _OrbitStateQuery.init_enums("sat:orbit_state", query_block, [x.value for x in OrbitState])
+        self.orbit_state = _SATOrbitStateEnumQuery.init_enums("sat:orbit_state", query_block, [x.value for x in SATOrbitStateEnum])
         self.orbit_state_vectors = _NullCheck("sat:orbit_state_vectors", query_block)
         self.platform_international_designator = _StringQuery("sat:platform_international_designator", query_block)
         self.relative_orbit = _NumberQuery.init_with_limits("sat:relative_orbit", query_block, min_value=1, max_value=None, is_int=True)
@@ -1676,6 +1935,58 @@ class _ViewExtension(_Extension):
         self.off_nadir = _NumberQuery.init_with_limits("view:off_nadir", query_block, min_value=0, max_value=90, is_int=False)
         self.sun_azimuth = _NumberQuery.init_with_limits("view:sun_azimuth", query_block, min_value=0, max_value=360, is_int=False)
         self.sun_elevation = _NumberQuery.init_with_limits("view:sun_elevation", query_block, min_value=-90, max_value=90, is_int=False)
+
+
+class _UmbraExtension(_Extension):
+    """
+    STAC Extension for Umbra STAC Items .
+
+    ...
+
+    Attributes
+    ----------
+    best_resolution_azimuth_meters: _NumberQuery
+        number query interface for searching items by the umbra:best_resolution_azimuth_meters field where the minimum value is 0. Float input.
+    best_resolution_range_meters: _NumberQuery
+        number query interface for searching items by the umbra:best_resolution_range_meters field where the minimum value is 0. Float input.
+    collect_id : _StringQuery
+        string query interface for searching items by the umbra:collect_id field
+    collect_ids : _NullCheck
+        field can be checked to see if umbra:collect_ids is null
+    grazing_angle_degrees: _NumberQuery
+        number query interface for searching items by the umbra:grazing_angle_degrees field. Float input.
+    organization_id : _StringQuery
+        string query interface for searching items by the umbra:organization_id field
+    platform_pair : _StringQuery
+        string query interface for searching items by the umbra:platform_pair field
+    slant_range_meters: _NumberQuery
+        number query interface for searching items by the umbra:slant_range_meters field. Float input.
+    squint_angle_degrees_off_broadside: _NumberQuery
+        number query interface for searching items by the umbra:squint_angle_degrees_off_broadside field where the minimum value is 0 and the max value is 90. Float input.
+    squint_angle_engineering_degrees: _NumberQuery
+        number query interface for searching items by the umbra:squint_angle_engineering_degrees field where the minimum value is -180 and the max value is 180. Float input.
+    squint_angle_exploitation_degrees: _NumberQuery
+        number query interface for searching items by the umbra:squint_angle_exploitation_degrees field where the minimum value is -90 and the max value is 90. Float input.
+    target_azimuth_angle_degrees: _NumberQuery
+        number query interface for searching items by the umbra:target_azimuth_angle_degrees field where the minimum value is 0 and the max value is 360. Float input.
+    task_id : _StringQuery
+        string query interface for searching items by the umbra:task_id field
+    """
+    def __init__(self, query_block: QueryBuilder):
+        super().__init__(query_block)
+        self.best_resolution_azimuth_meters = _NumberQuery.init_with_limits("umbra:best_resolution_azimuth_meters", query_block, min_value=0, max_value=None, is_int=False)
+        self.best_resolution_range_meters = _NumberQuery.init_with_limits("umbra:best_resolution_range_meters", query_block, min_value=0, max_value=None, is_int=False)
+        self.collect_id = _StringQuery("umbra:collect_id", query_block)
+        self.collect_ids = _NullCheck("umbra:collect_ids", query_block)
+        self.grazing_angle_degrees = _NumberQuery.init_with_limits("umbra:grazing_angle_degrees", query_block, min_value=None, max_value=None, is_int=False)
+        self.organization_id = _StringQuery("umbra:organization_id", query_block)
+        self.platform_pair = _StringQuery("umbra:platform_pair", query_block)
+        self.slant_range_meters = _NumberQuery.init_with_limits("umbra:slant_range_meters", query_block, min_value=None, max_value=None, is_int=False)
+        self.squint_angle_degrees_off_broadside = _NumberQuery.init_with_limits("umbra:squint_angle_degrees_off_broadside", query_block, min_value=0, max_value=90, is_int=False)
+        self.squint_angle_engineering_degrees = _NumberQuery.init_with_limits("umbra:squint_angle_engineering_degrees", query_block, min_value=-180, max_value=180, is_int=False)
+        self.squint_angle_exploitation_degrees = _NumberQuery.init_with_limits("umbra:squint_angle_exploitation_degrees", query_block, min_value=-90, max_value=90, is_int=False)
+        self.target_azimuth_angle_degrees = _NumberQuery.init_with_limits("umbra:target_azimuth_angle_degrees", query_block, min_value=0, max_value=360, is_int=False)
+        self.task_id = _StringQuery("umbra:task_id", query_block)
 
 
 class QueryBuilder:
@@ -1728,6 +2039,7 @@ class QueryBuilder:
         self.constellation = _StringQuery("constellation", self)
         self.mission = _StringQuery("mission", self)
         self.gsd = _NumberQuery.init_with_limits("gsd", self, min_value=0)
+        self.pl = _PlExtension(self)
         self.eo = _EOExtension(self)
         self.landsat = _LandsatExtension(self)
         self.mlm = _MLMExtension(self)
@@ -1735,6 +2047,7 @@ class QueryBuilder:
         self.sar = _SARExtension(self)
         self.sat = _SatExtension(self)
         self.view = _ViewExtension(self)
+        self.umbra = _UmbraExtension(self)
 
     def query_dump(self, top_level_is_or=False, limit: Optional[int] = None):
         properties = list(vars(self).values())

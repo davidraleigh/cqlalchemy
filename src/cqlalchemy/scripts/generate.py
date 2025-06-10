@@ -56,7 +56,8 @@ def add_extension(extension, extensions):
 @click.option("--interactive", is_flag=True, default=False, help="Build query class from interactive mode")
 @click.option("--definition", default=None, type=pathlib.Path, help="Path to query meta definition")
 @click.option("--output", default=None, type=pathlib.Path, help="Output file location (only to be paired with --definition)")
-def build(interactive, definition, output):
+@click.option("--full-enum-name", is_flag=True, default=False, help="Use full enum names in query class")
+def build(interactive, definition, output, full_enum_name):
     """Create a cqlalchemy QueryBuilder class from STAC extensions."""
     extensions = {}
     stac_fields_to_ignore = set()
@@ -128,7 +129,8 @@ def build(interactive, definition, output):
     click.echo(f"STAC fields to omit: {stac_fields_to_ignore}")
     query_file_data = build_query_file(sorted_extensions,
                                        fields_to_exclude=stac_fields_to_ignore,
-                                       add_unique_enum=add_unique_enum)
+                                       add_unique_enum=add_unique_enum,
+                                       full_enum_name=full_enum_name)
     with pathlib.Path(output_file_location).open('wt') as f:
         f.write(query_file_data)
 

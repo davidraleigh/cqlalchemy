@@ -331,7 +331,7 @@ class _StringQuery(_BaseString):
             QueryBuilder: query builder for additional queries to add
         """
         self._clear_values()
-        self._eq_value = str(value)
+        self._eq_value = self._adjust_enum(value)
         return self._parent_obj
 
     def not_equals(self, value: str) -> QueryBuilder:
@@ -345,7 +345,7 @@ class _StringQuery(_BaseString):
             QueryBuilder: query builder for additional queries to add
         """
         self._clear_values()
-        self._ne_value = str(value)
+        self._ne_value = self._adjust_enum(value)
         return self._parent_obj
 
     def in_set(self, values: list[str]) -> QueryBuilder:
@@ -359,7 +359,7 @@ class _StringQuery(_BaseString):
             QueryBuilder: query builder for additional queries to add
         """
         self._clear_values()
-        self._in_values = [str(x) for x in values]
+        self._in_values = [self._adjust_enum(x) for x in values]
         return self._parent_obj
 
     def not_in_set(self, values: list[str]) -> QueryBuilder:
@@ -373,7 +373,7 @@ class _StringQuery(_BaseString):
             QueryBuilder: query builder for additional queries to add
         """
         self._clear_values()
-        self._not_in_values = [str(x) for x in values]
+        self._not_in_values = [self._adjust_enum(x) for x in values]
         return self._parent_obj
 
     def like(self, value: str) -> QueryBuilder:
@@ -387,7 +387,7 @@ class _StringQuery(_BaseString):
             QueryBuilder: query builder for additional queries to add
         """
         self._clear_values()
-        self._like_value = value
+        self._like_value = self._adjust_enum(value)
         return self._parent_obj
 
     def _clear_values(self):
@@ -396,6 +396,12 @@ class _StringQuery(_BaseString):
         self._eq_value = None
         self._ne_value = None
         self._like_value = None
+
+    @staticmethod
+    def _adjust_enum(value):
+        if isinstance(value, Enum):
+            return value.value
+        return str(value)
 
 
 class _Query(_QueryBase):
@@ -418,8 +424,13 @@ class _Query(_QueryBase):
                 "op": "isNull",
                 "args": [self.property_obj]
             }
-        elif self._gt_value is None and self._lt_value is None and self._ne_value is None:
-            return None
+        elif self._gt_value is None and self._lt_value is None:
+            if self._ne_value is None:
+                return None
+            return {
+                "op": "!=",
+                "args": [self.property_obj, self._ne_value]
+            }
 
         gt_query = {
             "op": self._gt_operand,
@@ -710,6 +721,7 @@ class _NumberQuery(_Query):
     def _check(self, value):
         if self._is_int and not isinstance(value, int) and math.floor(value) != value:
             raise ValueError(f"for integer type, must use ints. {value} is not an int")
+        self._check_range(value)
 
 
 class _SpatialQuery(_QueryBase):

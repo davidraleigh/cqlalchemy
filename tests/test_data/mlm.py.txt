@@ -1,6 +1,6 @@
-class Accelerator(str, Enum):
+class MLMAcceleratorEnum(str, Enum):
     """
-    Accelerator Enum
+    MLM Accelerator Enum
     """
 
     amd64 = "amd64"
@@ -12,43 +12,43 @@ class Accelerator(str, Enum):
     macos_arm = "macos-arm"
 
 
-class _AcceleratorQuery(_EnumQuery):
+class _MLMAcceleratorEnumQuery(_EnumQuery):
     """
-    Accelerator Enum Query Interface
+    MLM Accelerator Enum Query Interface
     """
 
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _AcceleratorQuery(field_name, parent_obj)
+        o = _MLMAcceleratorEnumQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: Accelerator) -> QueryBuilder:
+    def equals(self, value: MLMAcceleratorEnum) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def not_equals(self, value: Accelerator) -> QueryBuilder:
+    def not_equals(self, value: MLMAcceleratorEnum) -> QueryBuilder:
         self._check([value.value])
         self._ne_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[Accelerator]) -> QueryBuilder:
+    def in_set(self, values: list[MLMAcceleratorEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
 
-    def not_in_set(self, values: list[Accelerator]) -> QueryBuilder:
+    def not_in_set(self, values: list[MLMAcceleratorEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._not_in_values = extracted
         return self._parent_obj
 
 
-class Framework(str, Enum):
+class MLMFrameworkEnum(str, Enum):
     """
-    Framework Enum
+    MLM Framework Enum
     """
 
     PyTorch = "PyTorch"
@@ -66,35 +66,35 @@ class Framework(str, Enum):
     Weka = "Weka"
 
 
-class _FrameworkQuery(_EnumQuery):
+class _MLMFrameworkEnumQuery(_EnumQuery):
     """
-    Framework Enum Query Interface
+    MLM Framework Enum Query Interface
     Any other framework name to allow extension. Enum names should be preferred when possible to allow better portability.
     """
 
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _FrameworkQuery(field_name, parent_obj)
+        o = _MLMFrameworkEnumQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: Framework) -> QueryBuilder:
+    def equals(self, value: MLMFrameworkEnum) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def not_equals(self, value: Framework) -> QueryBuilder:
+    def not_equals(self, value: MLMFrameworkEnum) -> QueryBuilder:
         self._check([value.value])
         self._ne_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[Framework]) -> QueryBuilder:
+    def in_set(self, values: list[MLMFrameworkEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
 
-    def not_in_set(self, values: list[Framework]) -> QueryBuilder:
+    def not_in_set(self, values: list[MLMFrameworkEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._not_in_values = extracted
@@ -109,7 +109,7 @@ class _MLMExtension(_Extension):
 
     Attributes
     ----------
-    accelerator : _AcceleratorQuery
+    accelerator : _MLMAcceleratorEnumQuery
         enum query interface for searching items by the mlm:accelerator field
     accelerator_constrained : _BooleanQuery
         enum query interface for searching items by the mlm:accelerator_constrained field
@@ -121,7 +121,7 @@ class _MLMExtension(_Extension):
         string query interface for searching items by the mlm:architecture field
     batch_size_suggestion: _NumberQuery
         number query interface for searching items by the mlm:batch_size_suggestion field where the minimum value is 0. Float input.. Integer input.
-    framework : _FrameworkQuery
+    framework : _MLMFrameworkEnumQuery
         enum query interface for searching items by the mlm:framework field
     framework_version : _StringQuery
         string query interface for searching items by the mlm:framework_version field
@@ -146,13 +146,13 @@ class _MLMExtension(_Extension):
     """
     def __init__(self, query_block: QueryBuilder):
         super().__init__(query_block)
-        self.accelerator = _AcceleratorQuery.init_enums("mlm:accelerator", query_block, [x.value for x in Accelerator])
+        self.accelerator = _MLMAcceleratorEnumQuery.init_enums("mlm:accelerator", query_block, [x.value for x in MLMAcceleratorEnum])
         self.accelerator_constrained = _BooleanQuery("mlm:accelerator_constrained", query_block)
         self.accelerator_count = _NumberQuery.init_with_limits("mlm:accelerator_count", query_block, min_value=1, max_value=None, is_int=True)
         self.accelerator_summary = _StringQuery("mlm:accelerator_summary", query_block)
         self.architecture = _StringQuery("mlm:architecture", query_block)
         self.batch_size_suggestion = _NumberQuery.init_with_limits("mlm:batch_size_suggestion", query_block, min_value=0, max_value=None, is_int=True)
-        self.framework = _FrameworkQuery.init_enums("mlm:framework", query_block, [x.value for x in Framework])
+        self.framework = _MLMFrameworkEnumQuery.init_enums("mlm:framework", query_block, [x.value for x in MLMFrameworkEnum])
         self.framework_version = _StringQuery("mlm:framework_version", query_block)
         self.hyperparameters = _NullCheck("mlm:hyperparameters", query_block)
         self.input = _NullCheck("mlm:input", query_block)

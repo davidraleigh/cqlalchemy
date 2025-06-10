@@ -1,6 +1,6 @@
-class FrequencyBand(str, Enum):
+class SARFrequencyBandEnum(str, Enum):
     """
-    Frequency Band Enum
+    SAR Frequency Band Enum
     """
 
     P = "P"
@@ -13,79 +13,79 @@ class FrequencyBand(str, Enum):
     Ka = "Ka"
 
 
-class _FrequencyBandQuery(_EnumQuery):
+class _SARFrequencyBandEnumQuery(_EnumQuery):
     """
-    Frequency Band Enum Query Interface
+    SAR Frequency Band Enum Query Interface
     Frequency Band
     """
 
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _FrequencyBandQuery(field_name, parent_obj)
+        o = _SARFrequencyBandEnumQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: FrequencyBand) -> QueryBuilder:
+    def equals(self, value: SARFrequencyBandEnum) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def not_equals(self, value: FrequencyBand) -> QueryBuilder:
+    def not_equals(self, value: SARFrequencyBandEnum) -> QueryBuilder:
         self._check([value.value])
         self._ne_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[FrequencyBand]) -> QueryBuilder:
+    def in_set(self, values: list[SARFrequencyBandEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
 
-    def not_in_set(self, values: list[FrequencyBand]) -> QueryBuilder:
+    def not_in_set(self, values: list[SARFrequencyBandEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._not_in_values = extracted
         return self._parent_obj
 
 
-class ObservationDirection(str, Enum):
+class SARObservationDirectionEnum(str, Enum):
     """
-    Observation Direction Enum
+    SAR Observation Direction Enum
     """
 
     left = "left"
     right = "right"
 
 
-class _ObservationDirectionQuery(_EnumQuery):
+class _SARObservationDirectionEnumQuery(_EnumQuery):
     """
-    Observation Direction Enum Query Interface
+    SAR Observation Direction Enum Query Interface
     Antenna pointing direction
     """
 
     @classmethod
     def init_enums(cls, field_name, parent_obj: QueryBuilder, enum_fields: list[str]):
-        o = _ObservationDirectionQuery(field_name, parent_obj)
+        o = _SARObservationDirectionEnumQuery(field_name, parent_obj)
         o._enum_values = set(enum_fields)
         return o
 
-    def equals(self, value: ObservationDirection) -> QueryBuilder:
+    def equals(self, value: SARObservationDirectionEnum) -> QueryBuilder:
         self._check([value.value])
         self._eq_value = value.value
         return self._parent_obj
 
-    def not_equals(self, value: ObservationDirection) -> QueryBuilder:
+    def not_equals(self, value: SARObservationDirectionEnum) -> QueryBuilder:
         self._check([value.value])
         self._ne_value = value.value
         return self._parent_obj
 
-    def in_set(self, values: list[ObservationDirection]) -> QueryBuilder:
+    def in_set(self, values: list[SARObservationDirectionEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._in_values = extracted
         return self._parent_obj
 
-    def not_in_set(self, values: list[ObservationDirection]) -> QueryBuilder:
+    def not_in_set(self, values: list[SARObservationDirectionEnum]) -> QueryBuilder:
         extracted = [x.value for x in values]
         self._check(extracted)
         self._not_in_values = extracted
@@ -104,7 +104,7 @@ class _SARExtension(_Extension):
         field can be checked to see if sar:beam_ids is null
     center_frequency: _NumberQuery
         number query interface for searching items by the sar:center_frequency field. Float input.
-    frequency_band : _FrequencyBandQuery
+    frequency_band : _SARFrequencyBandEnumQuery
         enum query interface for searching items by the sar:frequency_band field
     instrument_mode : _StringQuery
         string query interface for searching items by the sar:instrument_mode field
@@ -114,7 +114,7 @@ class _SARExtension(_Extension):
         number query interface for searching items by the sar:looks_equivalent_number field where the minimum value is 0. Float input.
     looks_range: _NumberQuery
         number query interface for searching items by the sar:looks_range field where the minimum value is 0. Float input.. Integer input.
-    observation_direction : _ObservationDirectionQuery
+    observation_direction : _SARObservationDirectionEnumQuery
         enum query interface for searching items by the sar:observation_direction field
     pixel_spacing_azimuth: _NumberQuery
         number query interface for searching items by the sar:pixel_spacing_azimuth field where the minimum value is 0. Float input.
@@ -133,12 +133,12 @@ class _SARExtension(_Extension):
         super().__init__(query_block)
         self.beam_ids = _NullCheck("sar:beam_ids", query_block)
         self.center_frequency = _NumberQuery.init_with_limits("sar:center_frequency", query_block, min_value=None, max_value=None, is_int=False)
-        self.frequency_band = _FrequencyBandQuery.init_enums("sar:frequency_band", query_block, [x.value for x in FrequencyBand])
+        self.frequency_band = _SARFrequencyBandEnumQuery.init_enums("sar:frequency_band", query_block, [x.value for x in SARFrequencyBandEnum])
         self.instrument_mode = _StringQuery("sar:instrument_mode", query_block)
         self.looks_azimuth = _NumberQuery.init_with_limits("sar:looks_azimuth", query_block, min_value=0, max_value=None, is_int=True)
         self.looks_equivalent_number = _NumberQuery.init_with_limits("sar:looks_equivalent_number", query_block, min_value=0, max_value=None, is_int=False)
         self.looks_range = _NumberQuery.init_with_limits("sar:looks_range", query_block, min_value=0, max_value=None, is_int=True)
-        self.observation_direction = _ObservationDirectionQuery.init_enums("sar:observation_direction", query_block, [x.value for x in ObservationDirection])
+        self.observation_direction = _SARObservationDirectionEnumQuery.init_enums("sar:observation_direction", query_block, [x.value for x in SARObservationDirectionEnum])
         self.pixel_spacing_azimuth = _NumberQuery.init_with_limits("sar:pixel_spacing_azimuth", query_block, min_value=0, max_value=None, is_int=False)
         self.pixel_spacing_range = _NumberQuery.init_with_limits("sar:pixel_spacing_range", query_block, min_value=0, max_value=None, is_int=False)
         self.polarizations = _NullCheck("sar:polarizations", query_block)
