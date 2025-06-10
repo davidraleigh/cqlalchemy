@@ -1,4 +1,4 @@
-# This file is generated with version 0.0.14 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
+# This file is generated with version 0.1.0 of cqlalchemy https://github.com/davidraleigh/cqlalchemy
 #
 # extensions included:
 # https://stac-extensions.github.io/sar/v1.2.0/schema.json
