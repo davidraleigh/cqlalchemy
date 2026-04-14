@@ -11,7 +11,7 @@
 
 [![PyPI-Server](https://img.shields.io/pypi/v/cqlalchemy.svg)](https://pypi.org/project/cqlalchemy/)
 
-# cqlalchemy
+# [cqlalchemy](https://github.com/davidraleigh/cqlalchemy)
 
 > Library to help make CQL2-json queries a little easier!
 

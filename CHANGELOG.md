@@ -1,6 +1,10 @@
 # Changelog
 
-## Version 0.1.0
+## Version 0.1.2
+
+- query summary
+
+## Version 0.1.1
 
 - fix enum in query_dump
 - enums begin with json-ld prefix and end in Enum
