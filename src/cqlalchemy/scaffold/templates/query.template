@@ -31,6 +31,57 @@ class _DateTimeEncoder(JSONEncoder):
             return obj.isoformat()
 
 
+def _query_summary_value(value):
+    if isinstance(value, dict):
+        if set(value) == {"property"}:
+            return value["property"]
+        return json.dumps(value, sort_keys=True, cls=_DateTimeEncoder)
+    if isinstance(value, list):
+        return "[" + ", ".join(_query_summary_value(x) for x in value) + "]"
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+    if isinstance(value, str):
+        return json.dumps(value)
+    if isinstance(value, bool) or value is None:
+        return json.dumps(value)
+    if isinstance(value, (int, float)):
+        return str(value)
+    return json.dumps(str(value))
+
+
+def _query_summary_filter(query_filter, multiline=True, nested=False):
+    op = query_filter["op"]
+    args = query_filter.get("args", [])
+
+    if op in ("and", "or"):
+        separator = f"\n{op.upper()} " if multiline else f" {op.upper()} "
+        expression = separator.join(
+            _query_summary_filter(arg, multiline=multiline, nested=True)
+            for arg in args
+        )
+        if nested and len(args) > 1:
+            return f"({expression})"
+        return expression
+
+    if op == "not":
+        if len(args) == 1 and args[0].get("op") == "in" and len(args[0].get("args", [])) == 2:
+            not_args = args[0]["args"]
+            return f"{_query_summary_value(not_args[0])} NOT IN {_query_summary_value(not_args[1])}"
+        expression = _query_summary_filter(args[0], multiline=multiline, nested=True)
+        return f"NOT {expression}"
+
+    if op == "isNull":
+        return f"{_query_summary_value(args[0])} IS NULL"
+
+    if op in ("s_intersects",):
+        return f"{op}(" + ", ".join(_query_summary_value(arg) for arg in args) + ")"
+
+    if len(args) == 2:
+        return f"{_query_summary_value(args[0])} {op.upper()} {_query_summary_value(args[1])}"
+
+    return f"{op}(" + ", ".join(_query_summary_value(arg) for arg in args) + ")"
+
+
 class _QueryTuple:
     def __init__(self, left, op: str, right):
         self.left = left
@@ -851,6 +902,20 @@ class QueryBuilder:
                           indent=indent,
                           sort_keys=sort_keys,
                           cls=_DateTimeEncoder)
+
+    def query_summary(self, top_level_is_or=False, limit: Optional[int] = None, multiline=True):
+        query = self.query_dump(top_level_is_or=top_level_is_or, limit=limit)
+        if query is None:
+            return None
+
+        lines = [_query_summary_filter(query["filter"], multiline=multiline)]
+        if "sortby" in query:
+            sort_by = query["sortby"][0]
+            lines.append(f"SORT BY {sort_by['field']} {sort_by['direction'].upper()}")
+        if "limit" in query:
+            lines.append(f"LIMIT {query['limit']}")
+        separator = "\n" if multiline else " "
+        return separator.join(lines)
 
     def filter(self, *column_expression):
         query_tuple = column_expression[0]

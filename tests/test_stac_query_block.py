@@ -1023,6 +1023,50 @@ class STACTestCase(unittest.TestCase):
         self.assertEqual(a_dict["limit"], 5)
         a.query_dump_json()
 
+    def test_query_summary_empty(self):
+        a = QueryBuilder()
+        self.assertIsNone(a.query_summary())
+
+    def test_query_summary(self):
+        a = QueryBuilder()
+        t = datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+        a.datetime.gte(t).eo.cloud_cover.lte(20)
+        a.datetime.sort_by_desc()
+
+        summary = a.query_summary(limit=5)
+
+        self.assertEqual(
+            summary,
+            "datetime >= 2024-01-01T00:00:00+00:00\n"
+            "AND eo:cloud_cover <= 20\n"
+            "SORT BY datetime DESC\n"
+            "LIMIT 5",
+        )
+
+    def test_query_summary_inline(self):
+        a = QueryBuilder()
+        a.platform.like("Landsat%").eo.cloud_cover.is_null()
+
+        summary = a.query_summary(multiline=False)
+
+        self.assertEqual(summary, 'platform LIKE "Landsat%" AND eo:cloud_cover IS NULL')
+
+    def test_query_summary_filter_group(self):
+        a = QueryBuilder()
+        a.filter((a.view.azimuth > 9) | (a.sar.observation_direction == SARObservationDirectionEnum.left))
+
+        summary = a.query_summary()
+
+        self.assertEqual(summary, '(view:azimuth > 9\nOR sar:observation_direction = "left")')
+
+    def test_query_summary_not_in(self):
+        a = QueryBuilder()
+        a.mlm.framework.not_in_set([MLMFrameworkEnum.Hugging_Face, MLMFrameworkEnum.JAX])
+
+        summary = a.query_summary()
+
+        self.assertEqual(summary, 'mlm:framework NOT IN ["Hugging Face", "JAX"]')
+
     def test_null_projection(self):
         a = QueryBuilder()
         a.proj.bbox.is_null()
